@@ -74,12 +74,12 @@ the 80% target.
 | No model file at startup | app refuses to start, message says to run `kc-train` |
 | Database unreachable | estimates still work; `/api/houses` returns 503; health says `database: unavailable` |
 | Write without a key | 401; with no key configured at all, 403 |
-| Out-of-range answer (for example grade 99) | 422 naming the field |
+| Out-of-range answer (for example grade 99, or fewer rooms than any house in the data) | 422 naming the field |
 | Zip code the model never saw | 422 pointing to `/api/zipcodes` |
 
 ## Proof
 
-26 API tests (about one second, no Postgres needed) cover estimates, validation, the
+The API tests (about a second, no Postgres needed) cover estimates, validation, the
 full CRUD cycle, pagination, access control, database outage, startup failure and
-request ids. Whole suite: 77 tests, 99% coverage of `src/`. The Postgres branch is
-checked against a real Postgres in the Docker phase.
+request ids. The Postgres path is covered by 6 more tests that run when
+`KC_TEST_DATABASE_URL` is set, and by the Docker checks in [docs/05](05-containers.md).

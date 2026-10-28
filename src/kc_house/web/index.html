@@ -128,7 +128,7 @@ footer .sep { flex-basis: 100%; }
           <label for="bedrooms">Bedrooms</label>
           <div class="stepper">
             <button type="button" id="bed-minus" aria-label="One fewer bedroom">−</button>
-            <input id="bedrooms" type="number" inputmode="numeric" min="0" max="12" step="1" value="3">
+            <input id="bedrooms" type="number" inputmode="numeric" min="1" max="12" step="1" value="3">
             <button type="button" id="bed-plus" aria-label="One more bedroom">+</button>
           </div>
           <p class="error" id="bedrooms-error" aria-live="polite"></p>
@@ -142,7 +142,7 @@ footer .sep { flex-basis: 100%; }
 
         <div class="field">
           <label for="sqft">Living area <span class="hint">(square feet, inside the house)</span></label>
-          <input id="sqft" type="number" inputmode="numeric" min="300" max="14000" step="50" value="1800">
+          <input id="sqft" type="number" inputmode="numeric" min="370" max="14000" step="50" value="1800">
           <p class="hint" id="sqft-hint">about 167 square metres</p>
           <p class="error" id="sqft-error" aria-live="polite"></p>
         </div>
@@ -265,9 +265,9 @@ footer .sep { flex-basis: 100%; }
       if (!first) { first = $(field === "sqft" ? "sqft" : field); }
     }
     var beds = Number($("bedrooms").value);
-    if (!Number.isInteger(beds) || beds < 0 || beds > 12) { fail("bedrooms", "Enter a whole number from 0 to 12."); }
+    if (!Number.isInteger(beds) || beds < 1 || beds > 12) { fail("bedrooms", "Enter a whole number from 1 to 12."); }
     var sqft = Number($("sqft").value);
-    if (!(sqft >= 300 && sqft <= 14000)) { fail("sqft", "Enter between 300 and 14,000 square feet."); }
+    if (!(sqft >= 370 && sqft <= 14000)) { fail("sqft", "Enter between 370 and 14,000 square feet."); }
     var zip = Number($("zipcode").value);
     if (zipcodes.length && zipcodes.indexOf(zip) === -1) { fail("zipcode", "Pick a zip code from the list (King County only)."); }
     else if (!zipcodes.length && !(zip >= 98001 && zip <= 98199)) { fail("zipcode", "Enter a King County zip code, like 98103."); }
@@ -331,7 +331,7 @@ footer .sep { flex-basis: 100%; }
   document.querySelectorAll("[data-preset]").forEach(function (chip) {
     chip.addEventListener("click", function () { applyPreset(PRESETS[chip.dataset.preset]); });
   });
-  $("bed-minus").addEventListener("click", function () { $("bedrooms").value = Math.max(0, Number($("bedrooms").value) - 1); });
+  $("bed-minus").addEventListener("click", function () { $("bedrooms").value = Math.max(1, Number($("bedrooms").value) - 1); });
   $("bed-plus").addEventListener("click", function () { $("bedrooms").value = Math.min(12, Number($("bedrooms").value) + 1); });
   $("sqft").addEventListener("input", updateSqftHint);
 

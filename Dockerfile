@@ -55,7 +55,7 @@ USER app
 EXPOSE 8000
 
 # Healthy when the model is loaded (the database is reported but not required).
-HEALTHCHECK --interval=15s --timeout=3s --start-period=20s --retries=3 \
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
     CMD ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=2)"]
 
 # The app logs every request as JSON itself, so uvicorn's plain-text access log is off.

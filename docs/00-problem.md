@@ -55,5 +55,15 @@ flowchart LR
 
 ## Out of scope
 
-Neural networks (a linear model with 19 tabular features does not need one),
+Neural networks (tabular data, and classical models clear the quality floor by a wide margin),
 live data refresh, user accounts.
+
+## Outcome
+
+| Question | Result |
+|---|---|
+| Is the refactor faithful? | Yes: all 19 features equal the notebook's within 1e-9; the split is identical ([docs/01](01-pipeline.md)) |
+| Is it leak-free? | Yes: the water feature is fitted on training rows only, with a test that proves it |
+| Is the model honest? | Yes: baselines, six models, stricter splits, a model card with its weaknesses ([model card](model-card.md)) |
+| Can a non-technical person use it? | Locally and in Docker, yes ([docs/04](04-web.md)). A public link needs the AWS deploy, which has **not** been done yet ([docs/06](06-aws.md)) |
+| Is it safe to be public? | By design and by test: bounded inputs, closed-by-default writes, throttling, no secrets in the template. Not yet proven on a live deployment |

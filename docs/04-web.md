@@ -43,8 +43,8 @@ problem, idea, design, build, proof, reflection.
 - Verified in a real browser at desktop and phone width: example chips fill the form,
   the estimate returns in about 20 ms warm, the range bar and caveat appear, no
   horizontal overflow on a 375 px screen.
-- 12 automated page tests: security headers, `HEAD` support, no request to any other
-  website, every element the script looks up exists, only grades the API accepts, and
+- Automated page tests: security headers, `HEAD` support, no absolute URL, protocol-relative
+  URL or `url()` target that could reach another website (markup, scripts and styles), every element the script looks up exists, only grades the API accepts, and
   the deck's notebook score equals the frozen baseline.
 - Both pages are included in the built package, so the Docker image carries them.
 

@@ -1,127 +1,106 @@
-# Refactoring Project
+# King County house prices: from notebook to service
 
-Use this repository as a **template** for your refactoring project. It walks you through turning a working but messy notebook into clean, reusable Python code: the notebook analyzes King County house sales, and your job is to extract its data cleaning and feature engineering logic into a proper pipeline. Create pull requests in your own copy even if you are working alone, and use them to track your progress.
+A working-but-fragile Jupyter notebook, refactored into a tested pipeline, a trustworthy
+model and a small web service that anyone can try: answer six questions, get a price and
+an honest range.
 
-## Learning Objectives
+```mermaid
+flowchart LR
+    N[Notebook] --> P[Tested pipeline<br/>no train/test leakage]
+    P --> M[Model: tuned gradient boosting<br/>R² 0.88, typical error 9%]
+    M --> A[FastAPI service<br/>estimate + CRUD]
+    A --> W[One-page tester<br/>+ presentation]
+    A --> D[Docker + Postgres]
+    D -.ready, not yet deployed.-> L[AWS Lambda]
+```
 
-By the end of this repository, you should be able to:
+**Status:** everything runs locally and in Docker, and the AWS Lambda infrastructure is written and
+validated, but **it has not been deployed**, so there is no live link yet. See
+[docs/06-aws.md](docs/06-aws.md) for what is verified and what only a real deploy can prove.
 
-- Read and understand an existing Data Science notebook well enough to refactor it.
-- Refactor data cleaning and feature engineering code into reusable Python functions.
-- Build a pipeline that reproduces a notebook's preprocessing steps end to end.
-- Apply the same refactoring approach to a modeling workflow (stretch goal).
-- Build and containerize a FastAPI CRUD service backed by a database (stretch goal).
+**CI note:** the GitHub Actions workflows are written, but GitHub has refused to start any job on this
+account ("recent account payments have failed or your spending limit needs to be increased"), so none has run
+yet. Every check was run locally instead; the exact commands are in the docs.
 
-## Learning Path
+## Try it
 
-| File / Folder | Description |
+```bash
+uv sync --all-extras          # needs uv 0.13.5+ and Python 3.13 (see .python-version)
+uv run kc-train               # trains and evaluates (about two minutes), writes artifacts/
+uv run uvicorn kc_house.api.main:create_app --factory
+```
+
+Then open <http://localhost:8000> (the tester), `/presentation` (how it was built) and `/docs` (API).
+Writes to `/api/houses` are refused unless you set a key: `KC_API_KEY=my-secret uv run uvicorn ...`.
+
+With Docker (API plus a real Postgres, hardened):
+
+```bash
+cp .env.example .env          # then change the two secrets
+docker compose up --build --wait
+python3 scripts/smoke_test.py http://localhost:8000 --api-key "$(grep '^KC_API_KEY=' .env | cut -d= -f2)"
+```
+
+The notebook: open [King-County-refactored.ipynb](King-County-refactored.ipynb) with the `.venv` kernel.
+The original is untouched in [King-County.ipynb](King-County.ipynb).
+
+## Results
+
+| | Held-out R² | Typical error |
+|---|---|---|
+| Predict by quality grade only (baseline) | 0.43 | |
+| The notebook's model (polynomial ElasticNet), reproduced | 0.845 | 14.8% |
+| **Tuned gradient boosting (shipped)** | **0.880** | **9.0%** |
+| Six-question estimator (what the page uses) | 0.840 | 10.5% |
+
+Under stricter splits the score holds: 0.881 with the same house never on both sides, 0.877 training on
+the past and testing on the future. The page shows a price range that held the true price for 80.3% of
+untouched test houses. Full detail, limits and a fairness note: [docs/model-card.md](docs/model-card.md).
+
+## What this demonstrates, and where to look
+
+| Practice | Evidence |
 |---|---|
-| [**Project Description**](project-description.md) | The assignment tasks and stretch goals. |
-| [**King County Notebook**](King-County.ipynb) | The original notebook: EDA, cleaning, feature engineering, and modeling for King County house prices. |
+| **Refactor with proof, not hope** | notebook outputs frozen as golden values; the pipeline matches all 19 features to 1e-9 ([ADR-0002](docs/adr/0002-golden-master-parity.md), `tests/test_parity.py`) |
+| **Find and fix leakage** | the notebook learned a feature from test rows; it is now a fitted step with a leakage test ([docs/01](docs/01-pipeline.md)) |
+| **Compare models honestly** | baselines first, six models, the test set never used to tune, stricter splits ([docs/02](docs/02-training.md)) |
+| **Measure uncertainty** | a calibrated 80% range, checked on held-out data |
+| **API design** | factory, bounded inputs, closed-by-default writes, outage-tolerant ([docs/03](docs/03-api.md), [ADR-0005](docs/adr/0005-api-design.md)) |
+| **Usable by non-engineers** | self-contained page, no outside requests, strict security headers ([docs/04](docs/04-web.md)) |
+| **Containers done properly** | multi-stage, digest-pinned, trains inside the build, non-root, read-only ([docs/05](docs/05-containers.md)) |
+| **Tested against reality** | a real Postgres, including stopping the database mid-run |
+| **Infrastructure as code, tested** | CDK template with security assertions; no secret in the template ([docs/06](docs/06-aws.md)) |
+| **Decisions on record** | seven short ADRs, each with a diagram ([docs/adr/](docs/adr/)) |
+| **Automation** | workflows for lint, types, tests with Postgres, a notebook run, template tests and a full Docker stack (written, not yet run: see the CI note); Dependabot watches dependencies |
 
-### Additional Folders and Files
+137 automated tests (118 for the app, 19 for the infrastructure); 7 of the app tests run only when a Postgres URL or the notebook flag is set. About 99% of `src/` is covered.
 
-| File / Folder | Description |
+## How the repository is organised
+
+```
+src/kc_house/        the package: cleaning, features, pipeline, models, training, estimator
+  api/               FastAPI app, routers, secrets loading        web/  the page and the slides
+tests/               unit, parity, leakage, API, real-Postgres, notebook
+infra/               AWS CDK app and its tests
+docs/                the story: problem -> idea -> design -> proof, plus ADRs and the model card
+scripts/             baseline capture and the smoke test
+Dockerfile, docker-compose.yaml, .github/workflows/
+bonus_solution/      the course's reference example, left untouched
+```
+
+Start with [docs/README.md](docs/README.md) for the reading order, and
+[docs/07-reflection.md](docs/07-reflection.md) for the answers to the project's three questions.
+
+## Project brief, checked off
+
+| Task | Where |
 |---|---|
-| [**data**](data/) | The King County house price dataset used by the notebook. |
-| [**assets**](assets/) | Visual aids referenced in the repository. |
-| [**bonus_solution**](bonus_solution/) | A FastAPI + Postgres + Docker reference implementation for the optional CRUD stretch goal. |
-| [**pyproject.toml**](pyproject.toml) | Project configuration and dependencies. |
-| [**uv.lock**](uv.lock) | Dependency lock file. |
+| Refactor cleaning and feature engineering into Python files | `src/kc_house/cleaning.py`, `features.py` |
+| Reusable pipeline | `src/kc_house/pipeline.py` |
+| Refactor the modeling step | `src/kc_house/models.py`, `train.py` (`uv run kc-train`) |
+| FastAPI CRUD for houses (5 features) in a database | `src/kc_house/api/` |
+| Dockerfile, run the app in a container | `Dockerfile`, `docker-compose.yaml` |
+| Tests | `tests/`, `infra/tests/` |
+| Beyond the brief | web page, slides, AWS Lambda infrastructure, CI, model card |
 
-## Setup
-
-Use [uv](https://docs.astral.sh/uv/getting-started/installation/) 0.13.5 or newer
-and Python 3.13.17 or a newer 3.13 patch release, as defined in
-[`.python-version`](.python-version).
-
-Rebuild existing Docker images with `--pull --no-cache` after this update
-to refresh their system certificates and dependencies.
-
-> [!NOTE]
-> Throughout these steps, text in angle brackets like `<repo-name>` is a **placeholder**. Replace it, including the `< >` brackets, with your own value. For example, `cd <repo-name>` becomes `cd mle-refactoring-project`.
-
-### 1. Create the Repository from the Template
-
-Click **Use this template** on GitHub.
-
-When creating the repository:
-
-- Set yourself as the **Owner**
-- Choose a repository name
-- Disable **Include all branches**
-- Click **Create repository**
-
-> [!IMPORTANT]
-> If you are working in pairs or groups, only **one person** should complete this step.
-
----
-
-### 2. Add Collaborators (Pairs/Groups Only)
-
-If working with teammates:
-
-1. Open the repository on GitHub
-2. Go to **Settings → Collaborators**
-3. Add your teammates as collaborators
-4. Share the repository link with your team
-
-Teammates should accept the invitation before continuing.
-
----
-
-### 3. Clone the Repository
-
-Copy the SSH URL from the **Code** button on GitHub, then run:
-
-```bash
-git clone <copied-ssh-url>
-```
-
-The copied SSH URL will look like `git@github.com:<your-username>/<repo-name>.git`.
-
----
-
-### 4. Move into the Project Folder and Install Dependencies
-
-This installs all dependencies and creates a virtual environment in `.venv/`.
-
-```bash
-cd <repo-name>
-uv sync
-```
-
----
-
-### 5. Open the Repository in VS Code
-
-> [!NOTE]
-> Make sure you open VS Code from the project root so it automatically detects the environment created by `uv sync`.
-
-Launch VS Code in the project root folder:
-
-```bash
-code .
-```
-
-Then open [King-County.ipynb](King-County.ipynb) and select the Python environment created by `uv sync` as the kernel.
-
-## How to Use This Repo
-
-1. Read the assignment brief in [project-description.md](project-description.md).
-2. Work through the notebook in [King-County.ipynb](King-County.ipynb).
-3. Refactor the cleaning and feature engineering logic into Python files.
-4. Build a reusable pipeline.
-5. If you want an extra challenge, extend your refactor to cover the modeling step as well.
-6. If you want to go even further, use [bonus_solution/](bonus_solution/) as a reference for the optional FastAPI + Docker stretch goal.
-
-## Bonus Solution
-
-The [bonus_solution/](bonus_solution/) folder contains a minimal working example of:
-
-- a FastAPI CRUD API
-- Postgres persistence
-- a `Dockerfile` for the API
-- a `docker-compose.yaml` file to run the API and database together
-
-It is included as a reference implementation for the optional stretch task, not as a required project structure.
+The dataset is the King County house sales file from the course template.

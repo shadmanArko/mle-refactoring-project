@@ -128,14 +128,20 @@ reference."""
 
 
 def _performance(report: dict) -> str:
-    return f"""## Performance (held-out test set, used once to judge the champion)
+    return f"""## Performance (held-out test set)
 
 {_metrics_table(report["test_metrics"])}
 
-Stopping floor: held-out R² of at least {report["min_acceptable_r2"]:.2f}. Met."""
+Stopping floor: held-out R² of at least {report["min_acceptable_r2"]:.2f}. Met.
+
+The test set was never used to choose or tune a model: settings were chosen by
+cross-validation on training data. It is used to report scores (the champion, the
+baselines, the notebook's model and the estimator) and to check the two stopping
+floors."""
 
 
 def _comparison(report: dict) -> str:
+    ref = report["reference_test_metrics"]
     rows = [
         [
             f"`{row['name']}`",
@@ -150,7 +156,11 @@ def _comparison(report: dict) -> str:
 {_table(["Model", "Role", "Cross-validated R²", "Test R²"], rows)}
 
 Baselines are scored before any tuning. Candidates are judged on cross-validation
-only. The reference's test score is reported for information, not used to choose."""
+only. The reference's test score is reported for information, not used to choose.
+
+The notebook's model on the same test set: R² {_r2(ref["r2"])}, typical error
+{ref["median_abs_pct_error"]:.1f}% of the price, mean absolute error
+{_usd(ref["mae"])}."""
 
 
 def _robustness(report: dict) -> str:
@@ -163,7 +173,12 @@ def _robustness(report: dict) -> str:
 {_table(["Split", "R²", "Mean abs error", "Typical error"], rows)}
 
 *Grouped* keeps the same house out of both sides (177 houses sold twice).
-*Temporal* trains on earlier sales and tests on later ones, like real use."""
+*Temporal* trains on earlier sales and tests on later ones, like real use.
+
+Caveat: the model settings were chosen by cross-validation on the *random* training
+split, so some rows that fall in these two test sets were seen during tuning. Treat the
+grouped and temporal scores as a check on the split, slightly optimistic, not a
+re-tuned result."""
 
 
 def _errors(report: dict) -> str:

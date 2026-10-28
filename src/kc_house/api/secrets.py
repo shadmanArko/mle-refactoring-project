@@ -36,6 +36,11 @@ def resolve_secrets(settings: Settings, client: Any = None) -> Settings:
     Raises ``SecretError`` if a configured secret cannot be read: a deployment with a
     broken secret should fail loudly, not run quietly without writes or a database.
     """
+    if settings.database_secret_arn and not settings.database_host:
+        raise SecretError(
+            "KC_DATABASE_SECRET_ARN is set but KC_DATABASE_HOST is not; refusing to "
+            "fall back to the local SQLite file"
+        )
     wants_key = settings.api_key_secret_arn and settings.api_key is None
     wants_db = settings.database_secret_arn and settings.database_host
     if not (wants_key or wants_db):

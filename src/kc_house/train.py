@@ -193,9 +193,8 @@ def run_training(
     reference = tune_reference_model(X_train, y_train, cv)
     reference_row = _search_row("elastic_net_poly", "reference", reference)
     # Reporting only: the reference's test score is never used to choose anything.
-    reference_row["test_r2"] = regression_metrics(y_test, reference.predict(X_test))[
-        "r2"
-    ]
+    reference_metrics = regression_metrics(y_test, reference.predict(X_test))
+    reference_row["test_r2"] = reference_metrics["r2"]
     comparison.append(reference_row)
 
     # 3. Other families, judged on cross-validation only.
@@ -269,6 +268,7 @@ def run_training(
         },
         "best_params": search.best_params_,
         "reference_params": reference.best_params_,
+        "reference_test_metrics": reference_metrics,
         "min_acceptable_r2": MIN_ACCEPTABLE_R2,
         "comparison": comparison,
         "test_metrics": test_metrics,

@@ -86,6 +86,11 @@ def test_metrics_record_provenance_and_baselines_scored_first(trained):
         "temporal (train past, test future)",
     }
     assert saved["estimator"]["inputs"] == ESTIMATE_INPUTS
+    reference = saved["reference_test_metrics"]
+    assert {"r2", "mae", "median_abs_pct_error"} <= set(reference)
+    card = (out / "card.md").read_text()
+    assert "The notebook's model on the same test set" in card
+    assert "never used to choose or tune a model" in card
     interval = saved["estimator"]["interval"]
     assert 0 < interval["low_ratio"] < 1 < interval["high_ratio"]
     assert 0 <= interval["test_coverage"] <= 1

@@ -37,7 +37,7 @@ flowchart LR
 | User `app` (uid 10001), code owned by root | the process cannot modify its own code |
 | Compose: `read_only`, `cap_drop: ALL`, `no-new-privileges`, tmpfs `/tmp` | the container can do almost nothing if it is ever compromised |
 | Database has no published port; secrets come from a gitignored `.env`; compose refuses to start without them | nothing exposed, nothing weak by default |
-| `HEALTHCHECK` and `depends_on: service_healthy` | the app starts only when Postgres is ready, and is restarted if it stops answering |
+| `HEALTHCHECK` and `depends_on: service_healthy` | the app starts only when Postgres is ready, and `docker ps` shows when it stops answering. Docker itself does not restart an unhealthy container (Compose's `restart` reacts only to the process exiting); an orchestrator would act on the signal |
 
 Decision record: [ADR-0006](adr/0006-container-image.md).
 
@@ -64,6 +64,7 @@ about three minutes because it trains the model.
 | `down` then `up` (volume kept) | the stored house is still there |
 | **Stop the database** | health: `ok`, `database: unavailable`; estimates still return 200; `/api/houses` returns 503 |
 | **Start the database again** (app not restarted) | everything returns to 200 on its own |
+| **Freeze the database** (`docker pause`: connections hang instead of failing) | health answers in 2.0 s with `database: unavailable`, estimates stay at 200, `/api/houses` returns 503 in 2.0 s, recovery is instant. Found by review and fixed: a pooled connection used to hang the health check for 30 s+ (see ADR-0005) |
 | Real-Postgres tests (6) | pass against Postgres 17: CRUD, exact number round trips, ids never reused, pagination order, data outlives the app |
 | Image size | 805 MB (469 MB is the scientific Python stack) |
 

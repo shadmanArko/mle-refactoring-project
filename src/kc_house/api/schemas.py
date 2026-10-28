@@ -1,4 +1,5 @@
-"""Request and response shapes, with bounds taken from the training data."""
+"""Request and response shapes. Lower bounds are the training data's minima
+(1 bedroom, half a bathroom, 370 sq ft); upper bounds leave a little headroom."""
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -6,9 +7,9 @@ from pydantic import BaseModel, ConfigDict, Field
 class HouseBase(BaseModel):
     """The five facts stored for a house."""
 
-    bedrooms: int = Field(ge=0, le=12, examples=[3])
-    bathrooms: float = Field(ge=0, le=8, multiple_of=0.25, examples=[2.0])
-    sqft_living: int = Field(ge=300, le=14000, examples=[1800])
+    bedrooms: int = Field(ge=1, le=12, examples=[3])
+    bathrooms: float = Field(ge=0.5, le=8, multiple_of=0.25, examples=[2.0])
+    sqft_living: int = Field(ge=370, le=14000, examples=[1800])
     grade: int = Field(ge=3, le=13, description="Build quality, 3 to 13.", examples=[7])
     zipcode: int = Field(ge=98001, le=98199, examples=[98103])
 

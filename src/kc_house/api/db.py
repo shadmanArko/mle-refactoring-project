@@ -2,6 +2,7 @@
 
 from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.pool import NullPool
 
 
 class Base(DeclarativeBase):
@@ -25,4 +26,9 @@ def make_engine(url: str) -> Engine:
     """Create an engine that checks connections before use (Lambda freezes them)."""
     if url.startswith("sqlite"):
         return create_engine(url, connect_args={"check_same_thread": False})
-    return create_engine(url, pool_pre_ping=True)
+    # A frozen or unreachable database must produce a fast 503, never a hang.
+    # A pooled connection would be re-used on an already-open socket, where no connect
+    # timeout applies, so each request opens its own (NullPool) and the 2-second
+    # connect timeout always does. It also suits Lambda, which freezes idle
+    # connections. Behind RDS Proxy, or at real traffic, switch to a pool.
+    return create_engine(url, poolclass=NullPool, connect_args={"connect_timeout": 2})

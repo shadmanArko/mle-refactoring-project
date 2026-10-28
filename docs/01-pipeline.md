@@ -45,14 +45,17 @@ flowchart LR
 |---|---|
 | All 19 feature columns vs notebook | equal to 1e-9 |
 | Train/test split vs notebook | identical rows |
-| Held-out R², notebook vs pipeline | 0.8443 vs 0.8447 (within 0.005; gap = leakage fix) |
+| Held-out R², notebook vs pipeline | 0.8443 vs 0.8447 (within 0.005; a gap this small is expected from learning the water feature on training rows only) |
 | Leakage tests | transform-time rows cannot change learned references |
 | skops save/load round trip | identical predictions |
-| Tests / coverage of `src/` | 25 passing / 100% |
+| Tests | unit, parity, leakage and round-trip tests for every step; see the test suite |
 
 ## Known limits (honest list)
 
 - `water_distance` in training rows is 0 for waterfront houses (each is in its own
-  reference set). Matches the notebook; redundant with the `waterfront` flag.
+  reference set). Matches the notebook and is redundant with the `waterfront` flag, but it
+  means the model sees exact zeros in training that a new waterfront house will not have at
+  serving time. Reported scores come from held-out rows, so they are honest; a
+  leave-one-out reference set would remove the mismatch.
 - The split is random, like the notebook. 177 house ids are sold twice, so a
   grouped split would be stricter; Phase 2 reports it alongside.

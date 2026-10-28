@@ -96,7 +96,7 @@ approval environment.
 
 | | Status |
 |---|---|
-| Template security properties (18 tests) | verified: no secret values, private encrypted database, no `0.0.0.0/0`, least-privilege IAM, throttling, retention, both modes, options |
+| Template security properties (19 tests) | verified: no secret values, private encrypted database, no `0.0.0.0/0`, least-privilege IAM, throttling, retention, both modes, options |
 | The Lambda image target (arm64) | verified locally: builds in about 5 minutes, 860 MB, adapter present and executable, boto3 present; the app starts read-only with no Linux capabilities and passes the smoke test 9 of 9 in database-less mode |
 | Secrets loading (escaping, failure handling, start-up wiring) | verified with 7 unit tests and a fake Secrets Manager |
 | Lambda Web Adapter serving real API Gateway events | **not verified**: only a real invoke proves it |

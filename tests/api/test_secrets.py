@@ -85,6 +85,11 @@ def test_a_secret_that_cannot_be_read_stops_start_up():
         resolve_secrets(settings(api_key_secret_arn=KEY_ARN), FakeSecretsManager({}))
 
 
+def test_a_database_secret_without_a_host_cannot_silently_fall_back_to_sqlite():
+    with pytest.raises(SecretError, match="KC_DATABASE_HOST"):
+        resolve_secrets(settings(database_secret_arn=DB_ARN), FakeSecretsManager({}))
+
+
 def test_a_database_secret_without_a_password_stops_start_up():
     client = FakeSecretsManager({DB_ARN: json.dumps({"username": "kc"})})
 

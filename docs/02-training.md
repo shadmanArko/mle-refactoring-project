@@ -51,8 +51,10 @@ flowchart LR
 - [ADR-0004](adr/0004-six-question-estimator.md): answer from six questions by
   filling the rest with zipcode medians.
 - **Floors.** Held-out R² of at least 0.80 (champion) and 0.70 (estimator).
-- **Test set used once** to judge the champion. Other families are judged by
-  cross-validation so they cannot overfit the test set.
+- **The test set never chooses or tunes anything.** Settings are chosen by
+  cross-validation on training data. The test set is used to *report* scores (the
+  champion, the baselines, the notebook's model, the estimator) and to check the two
+  stopping floors. Other families are judged by cross-validation only.
 - **Provenance in `metrics.json`**: git commit, data hash, seed, library versions.
 - **Safe loading.** Each skops file is saved with the list of types it needs; the API
   loads with that explicit allow-list instead of trusting everything.
@@ -63,15 +65,15 @@ flowchart LR
 |---|---|
 | Does the notebook model reproduce? | Yes: test R² 0.845, CV 0.828, same hyperparameters |
 | Is the notebook model the best? | No. Tuned gradient boosting: test R² **0.880**, typical error **9.0%** of the price |
-| Is the score inflated by split choice? | No: grouped 0.881, temporal 0.877 |
+| Is the score inflated by split choice? | Not noticeably: grouped 0.881, temporal 0.877. Caveat: the settings were tuned on the random training split, so these two are slightly optimistic |
 | What does asking only six questions cost? | R² 0.840 vs 0.880, typical error 10.5% vs 9.0% |
-| Where does it err? | Cheap houses overestimated by about $24k, top quartile underestimated by about $47k |
+| Where does it err? | Full model: cheap houses overestimated by about $24k, top quartile underestimated by about $47k. The six-question model the page uses: about $29k and $52k |
 | Is deep learning warranted? | No: tabular data, classical models clear the floor by a wide margin |
 
 ## Proof
 
-48 tests, 99% coverage of `src/`, running in about 14 seconds. Includes: the
-reference grid search reaches the notebook's hyperparameters, a model below either
-floor is never saved, the CLI exits non-zero on failure, saved models reload with
-their allow-lists and predict, and the estimator trains on full rows but predicts
-from six answers.
+The whole suite runs in about 15 seconds and covers about 99% of `src/`. It includes: the
+reference grid search reaches the notebook's hyperparameters, a model below either floor is
+never saved, the CLI exits non-zero on failure, saved models reload with their allow-lists
+and predict, and a test proving the estimator trains on the same zip-filled rows it will see
+when serving.

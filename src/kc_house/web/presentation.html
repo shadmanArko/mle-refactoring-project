@@ -143,7 +143,7 @@ svg .bar { fill: var(--line); } svg .bar.top { fill: var(--brand); } svg .bar.re
     <rect class="acc" x="190" y="136" width="300" height="82" rx="8"/><text x="340" y="160" text-anchor="middle">FastAPI service</text><text class="m" x="340" y="180" text-anchor="middle">model in memory · estimates need no database</text><text class="m" x="340" y="198" text-anchor="middle">closed-by-default writes · JSON logs</text>
     <rect class="box" x="540" y="150" width="130" height="54" rx="8"/><text x="605" y="174" text-anchor="middle">Database</text><text class="m" x="605" y="192" text-anchor="middle">SQLite · Postgres</text>
     <path class="ln" d="M140 177H188"/><path class="ln" d="M490 177H538"/>
-    <rect class="plan" x="176" y="124" width="328" height="106" rx="12"/><text class="m" x="184" y="240">built as a Docker image · planned: AWS Lambda behind a public URL</text>
+    <rect class="plan" x="176" y="124" width="328" height="106" rx="12"/><text class="m" x="184" y="240">Docker image: built · AWS Lambda infrastructure: written, not deployed</text>
   </svg>
 </section>
 
@@ -199,8 +199,8 @@ svg .bar { fill: var(--line); } svg .bar.top { fill: var(--brand); } svg .bar.re
     <div class="card stat"><b>0.877</b><span>train on the past, test on the future</span></div>
   </div>
   <div class="grid cols-2" style="margin-top:1em">
-    <div class="callout good"><b>The score holds up</b> under stricter splits, and the test set was used once, only to judge the champion.</div>
-    <div class="callout"><b>Known weakness:</b> it pulls estimates toward the middle. Cheap houses are overestimated by about $24k, the top quarter underestimated by about $47k.</div>
+    <div class="callout good"><b>The score holds up</b> under stricter splits, and no model was chosen or tuned on the test set.</div>
+    <div class="callout"><b>Known weakness:</b> it pulls estimates toward the middle. Cheap houses are overestimated and the top quarter underestimated: by about $24k and $47k for the full model, $29k and $52k for the six-question model the page uses.</div>
   </div>
 </section>
 
@@ -220,14 +220,14 @@ svg .bar { fill: var(--line); } svg .bar.top { fill: var(--brand); } svg .bar.re
   <p class="kicker">10 · How it is built</p>
   <h2>Practices you can check in the repo</h2>
   <div class="grid cols-3">
-    <div class="card"><h3>Tests <span class="tag done">done</span></h3><p>Over 80 automated tests; about 99% of the source is covered; leakage and parity have their own tests.</p></div>
-    <div class="card"><h3>Continuous integration <span class="tag done">done</span></h3><p>Lint, format, types and tests on every pull request.</p></div>
-    <div class="card"><h3>Decisions on record <span class="tag done">done</span></h3><p>Five short architecture decision records, each with a diagram.</p></div>
+    <div class="card"><h3>Tests <span class="tag done">done</span></h3><p>137 automated tests; about 99% of the source is covered; leakage, parity, a real Postgres and the notebook have their own.</p></div>
+    <div class="card"><h3>Continuous integration <span class="tag next">written</span></h3><p>Lint, types, tests, a Docker stack. Not run yet: GitHub is blocking jobs on an account billing issue. All checks were run locally.</p></div>
+    <div class="card"><h3>Decisions on record <span class="tag done">done</span></h3><p>Seven short architecture decision records, each with a diagram.</p></div>
     <div class="card"><h3>Safe by default <span class="tag done">done</span></h3><p>Writes need an API key; inputs are bounded; unknown zip codes get a clear message.</p></div>
     <div class="card"><h3>Reproducible <span class="tag done">done</span></h3><p>Locked dependencies; every model records its code version, data hash and settings.</p></div>
     <div class="card"><h3>Containers <span class="tag done">done</span></h3><p>The model is trained inside the image build. Non-root, read-only image; tested against a real Postgres, including a database outage.</p></div>
     <div class="card"><h3>Observable <span class="tag done">done</span></h3><p>JSON logs with a request id and stack traces; health shows model and database state.</p></div>
-    <div class="card"><h3>Public AWS URL <span class="tag next">next</span></h3><p>Serverless deployment on AWS Lambda with throttling, then a smoke test of the live link.</p></div>
+    <div class="card"><h3>AWS Lambda <span class="tag next">ready, not deployed</span></h3><p>Infrastructure written and checked by 19 template tests: private encrypted database, no secrets in the template, throttling. A real deploy is the next step.</p></div>
   </div>
 </section>
 
@@ -236,11 +236,11 @@ svg .bar { fill: var(--line); } svg .bar.top { fill: var(--brand); } svg .bar.re
   <h2>Steps, challenges, next time</h2>
   <div class="grid cols-3">
     <div class="card"><h3>Steps</h3><ul class="tight muted" style="font-size:.82em">
-      <li>Read the notebook, freeze its numbers</li><li>Refactor into a tested pipeline</li><li>Compare and tune models</li><li>Build the API and CRUD</li><li>Add the six-question page</li><li>Containerise, deploy</li></ul></div>
+      <li>Read the notebook, freeze its numbers</li><li>Refactor into a tested pipeline</li><li>Compare and tune models</li><li>Build the API and CRUD</li><li>Add the six-question page</li><li>Containerise, then write the AWS infrastructure</li></ul></div>
     <div class="card"><h3>Challenges</h3><ul class="tight muted" style="font-size:.82em">
-      <li>Leakage hidden inside a feature</li><li>Text and code disagreed about the target</li><li>The "obvious" model was not the best</li><li>Users cannot supply 19 inputs</li><li>Keeping a public demo safe</li></ul></div>
+      <li>Leakage hidden inside a feature</li><li>Text and code disagreed about the target</li><li>The "obvious" model was not the best</li><li>Users cannot supply 19 inputs</li><li>Keeping a public demo safe</li><li>Proving what cannot be run yet</li></ul></div>
     <div class="card"><h3>With more time</h3><ul class="tight muted" style="font-size:.82em">
-      <li>Database migrations (Alembic)</li><li>Drift monitoring and scheduled retraining</li><li>Fairness audit of location features</li><li>Explanations per prediction (SHAP)</li><li>Postgres in CI</li></ul></div>
+      <li>Database migrations (Alembic)</li><li>Drift monitoring and scheduled retraining</li><li>Fairness audit of location features</li><li>Explanations per prediction (SHAP)</li><li>Deploy, measure, load-test</li></ul></div>
   </div>
 </section>
 

@@ -31,8 +31,15 @@ def test_pages_answer_head_requests(client, path):
 def test_pages_load_nothing_from_other_websites(name):
     html = (WEB_DIR / name).read_text()
 
-    assert not re.search(r'(?:src|href)\s*=\s*["\']https?://', html)
+    # Any absolute URL anywhere (markup, inline script, inline CSS) must be the SVG
+    # namespace label, which is an identifier, not a request.
+    urls = re.findall(r"https?://[^\s\"'<>)]+", html)
+    assert set(urls) <= {"http://www.w3.org/2000/svg"}, urls
+    assert not re.search(r"""[\s"'(=]//[a-z0-9]""", html), "protocol-relative URL"
     assert "@import" not in html
+    for target in re.findall(r"url\(([^)]*)\)", html):
+        # data: URIs and #fragment references (SVG markers) make no request.
+        assert target.strip("'\" ").startswith(("data:", "#")), target
 
 
 @pytest.mark.parametrize("name", PAGES)

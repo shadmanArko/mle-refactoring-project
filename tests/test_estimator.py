@@ -80,7 +80,10 @@ def test_defaults_are_learned_from_the_rows_given_to_fit(split):
     assert set(fitted.zipcodes_) == set(first_half["zipcode"])
 
 
-def test_estimator_trains_on_full_rows_but_predicts_from_six_answers(split):
+def test_the_estimator_learns_from_the_same_zip_filled_rows_it_will_see_when_serving(
+    split,
+):
+    """ADR-0004: training rows are degraded the same way as serving rows."""
     X_train, _, y_train, _ = split
     full_model = Pipeline(
         [
@@ -88,8 +91,26 @@ def test_estimator_trains_on_full_rows_but_predicts_from_six_answers(split):
             ("model", HistGradientBoostingRegressor(max_iter=20, random_state=0)),
         ]
     )
-
     estimator = build_estimator(full_model).fit(X_train, y_train)
+
+    seen_by_the_model = estimator.named_steps["defaults"].transform(X_train.head(50))
+
+    # The true latitude and the true above-ground area are NOT what the model sees.
+    assert not (seen_by_the_model["lat"] == X_train.head(50)["lat"]).all()
+    assert (seen_by_the_model["sqft_above"] == seen_by_the_model["sqft_living"]).all()
+    assert (X_train.head(50)["sqft_above"] != X_train.head(50)["sqft_living"]).any()
+
+
+def test_a_six_answer_house_gets_a_plausible_price(split):
+    X_train, _, y_train, _ = split
+    full_model = Pipeline(
+        [
+            ("preprocess", build_preprocessing()),
+            ("model", HistGradientBoostingRegressor(max_iter=20, random_state=0)),
+        ]
+    )
+    estimator = build_estimator(full_model).fit(X_train, y_train)
+
     prediction = estimator.predict(answers())
 
     assert prediction.shape == (1,)

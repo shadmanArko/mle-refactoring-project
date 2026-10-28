@@ -9,7 +9,12 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from sqlalchemy.exc import OperationalError, SQLAlchemyError
+from sqlalchemy.exc import (
+    InterfaceError,
+    OperationalError,
+    SQLAlchemyError,
+)
+from sqlalchemy.exc import TimeoutError as PoolTimeoutError
 from sqlalchemy.orm import sessionmaker
 
 from kc_house.api.db import Base, make_engine
@@ -62,7 +67,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return JSONResponse(status_code=422, content={"detail": str(error)})
 
     @app.exception_handler(OperationalError)
-    async def database_unavailable(_: Request, __: OperationalError) -> JSONResponse:
+    @app.exception_handler(InterfaceError)
+    @app.exception_handler(PoolTimeoutError)
+    async def database_unavailable(_: Request, __: Exception) -> JSONResponse:
         logger.exception("database error")
         return JSONResponse(
             status_code=503, content={"detail": "Database temporarily unavailable."}

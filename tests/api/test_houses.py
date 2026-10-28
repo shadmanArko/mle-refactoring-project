@@ -27,13 +27,13 @@ def test_full_crud_cycle(client, auth, house, create):
 
 
 def test_listing_is_paginated_with_a_total(client, create):
-    for bedrooms in range(5):
+    for bedrooms in range(1, 6):
         create(bedrooms=bedrooms)
 
     page = client.get("/api/houses", params={"limit": 2, "offset": 2}).json()
 
     assert page["total"] == 5
-    assert [item["bedrooms"] for item in page["items"]] == [2, 3]
+    assert [item["bedrooms"] for item in page["items"]] == [3, 4]
     assert (page["limit"], page["offset"]) == (2, 2)
 
 

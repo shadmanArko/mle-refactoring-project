@@ -35,9 +35,11 @@ def test_waterfront_is_optional_and_defaults_to_no(client, house):
 @pytest.mark.parametrize(
     ("field", "value"),
     [
-        ("bedrooms", -1),
+        ("bedrooms", 0),  # the training data has no 0-bedroom house
         ("bedrooms", 40),
+        ("bathrooms", 0),  # smallest in the data is half a bathroom
         ("bathrooms", 2.1),
+        ("sqft_living", 369),  # smallest in the data is 370
         ("sqft_living", 50),
         ("grade", 20),
         ("zipcode", 10001),

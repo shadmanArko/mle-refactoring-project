@@ -81,13 +81,13 @@ def test_ids_are_not_reused_after_a_delete(pg, auth, house):
 
 
 def test_pagination_is_ordered_and_counts_everything(pg, auth, house):
-    for bedrooms in range(5):
+    for bedrooms in range(1, 6):
         pg.post("/api/houses", json=house | {"bedrooms": bedrooms}, headers=auth)
 
     page = pg.get("/api/houses", params={"limit": 2, "offset": 3}).json()
 
     assert page["total"] == 5
-    assert [item["bedrooms"] for item in page["items"]] == [3, 4]
+    assert [item["bedrooms"] for item in page["items"]] == [4, 5]
 
 
 def test_data_outlives_the_application(make_settings, pg_app, auth, house):
