@@ -40,6 +40,8 @@ extend-exclude = ["King-County.ipynb", "bonus_solution"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "N", "PD", "NPY", "RUF"]
+# `X` / `X_train` are the scikit-learn convention for feature matrices.
+ignore = ["N803", "N806"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["PD901"]
