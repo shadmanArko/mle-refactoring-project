@@ -35,7 +35,7 @@ jobs:
       KC_TEST_DATABASE_URL: postgresql+psycopg://test:test@localhost:5432/houses_test
     steps:
       - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
       - name: Install locked dependencies
@@ -57,7 +57,7 @@ jobs:
       KC_RUN_NOTEBOOK: "1"
     steps:
       - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
       - run: uv sync --locked --all-extras
@@ -69,7 +69,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
       - name: Install infrastructure dependencies
