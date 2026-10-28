@@ -49,6 +49,22 @@ jobs:
       - name: Tests
         run: uv run pytest
 
+  infra:
+    # Checks the AWS template's security properties. Nothing is deployed.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install infrastructure dependencies
+        working-directory: infra
+        run: uv sync --locked
+      - name: Test the template
+        working-directory: infra
+        run: uv run pytest
+
   stack:
     # Builds the image (which trains the model) and tests the real Compose stack.
     runs-on: ubuntu-latest

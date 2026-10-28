@@ -1,0 +1,58 @@
+name: Deploy to AWS
+
+# Manual only. Nothing deploys on push or pull request.
+# One-time setup (see docs/06-aws.md): an IAM role that GitHub can assume through
+# OIDC, an "production" environment with required reviewers, and the repository
+# variables AWS_DEPLOY_ROLE_ARN and AWS_REGION. No AWS keys are stored in GitHub.
+on:
+  workflow_dispatch:
+    inputs:
+      database:
+        description: "rds = Lambda + private Postgres; none = estimator only (cheapest)"
+        type: choice
+        options: [rds, none]
+        default: rds
+
+permissions:
+  id-token: write # lets the job request a short-lived AWS token
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # A native arm64 runner builds the arm64 Lambda image without emulation.
+    runs-on: ubuntu-24.04-arm
+    environment: production
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Deploy the stack
+        working-directory: infra
+        run: |
+          uv sync --locked
+          npx aws-cdk@2 deploy --require-approval never --outputs-file outputs.json \
+            -c database=${{ inputs.database }} -c git_sha=${{ github.sha }}
+      - name: Smoke test the live link
+        working-directory: infra
+        run: |
+          URL=$(python3 -c "import json; print(json.load(open('outputs.json'))['KcHouse']['ApiUrl'])")
+          SECRET_ARN=$(python3 -c "import json; print(json.load(open('outputs.json'))['KcHouse']['ApiKeySecretArn'])")
+          KEY=$(aws secretsmanager get-secret-value --secret-id "$SECRET_ARN" --query SecretString --output text)
+          echo "::add-mask::$KEY"
+          echo "Live at: $URL"
+          if [ "${{ inputs.database }}" = "rds" ]; then
+            python3 ../scripts/smoke_test.py "$URL" --api-key "$KEY"
+          else
+            python3 ../scripts/smoke_test.py "$URL" --no-database
+          fi

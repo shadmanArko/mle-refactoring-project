@@ -60,3 +60,14 @@ HEALTHCHECK --interval=15s --timeout=3s --start-period=20s --retries=3 \
 
 # The app logs every request as JSON itself, so uvicorn's plain-text access log is off.
 CMD ["uvicorn", "kc_house.api.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
+
+
+# AWS Lambda target: the same image plus the Lambda Web Adapter, which lets the
+# unchanged web app answer Lambda events (API Gateway) while it keeps listening on
+# port 8000. Build:  docker build --target lambda --platform linux/arm64 .
+# (docker compose and a plain `docker build` use the runtime stage above.)
+FROM runtime AS lambda
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter@sha256:46d6625e68cbbdd2efab4a20245977664513f13ffef47915b000d431adcea0b4 /lambda-adapter /opt/extensions/lambda-adapter
+ENV AWS_LWA_PORT=8000 \
+    AWS_LWA_READINESS_CHECK_PATH=/api/health \
+    AWS_LWA_ASYNC_INIT=true

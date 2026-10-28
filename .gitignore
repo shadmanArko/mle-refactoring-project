@@ -174,3 +174,6 @@ model/
 # Training outputs (model binary, metrics); the model card is committed under docs/
 artifacts/
 *.db
+
+# CDK output
+cdk.out/

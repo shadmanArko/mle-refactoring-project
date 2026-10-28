@@ -2,6 +2,7 @@
 
     python scripts/smoke_test.py http://localhost:8000
     python scripts/smoke_test.py http://localhost:8000 --api-key SECRET  # also CRUD
+    python scripts/smoke_test.py https://... --no-database  # no Postgres deployed
 
 Uses only the standard library so it runs anywhere (CI, a laptop, after a deploy).
 Exits non-zero, with a reason, if anything a visitor depends on is broken.
@@ -60,7 +61,7 @@ def wait_until_ready(base: str, seconds: int = 120) -> None:
     raise SystemExit(f"FAIL: {base} was not healthy within {seconds}s")
 
 
-def run_checks(base: str, api_key: str | None) -> int:
+def run_checks(base: str, api_key: str | None, database: bool = True) -> int:
     results: list[bool] = []
 
     def check(name: str, ok: bool, detail: str = "") -> None:
@@ -71,7 +72,14 @@ def run_checks(base: str, api_key: str | None) -> int:
     status, body, _ = call(base, "/api/health")
     health = json.loads(body)
     check("health reports a loaded model", status == 200 and health["status"] == "ok")
-    check("database reachable", health["database"] == "ok", f"-> {health['database']}")
+    if database:
+        check(
+            "database reachable", health["database"] == "ok", f"-> {health['database']}"
+        )
+    else:
+        check("no database, as configured", health["database"] == "unavailable")
+        status, _, _ = call(base, "/api/houses")
+        check("house list answers 503 by design", status == 503, f"-> {status}")
 
     answers = HOUSE | {"waterfront": False}
     status, body, _ = call(base, "/api/estimate", answers)
@@ -93,7 +101,7 @@ def run_checks(base: str, api_key: str | None) -> int:
     status, _, _ = call(base, "/api/houses", HOUSE)
     check("anonymous write is refused", status in (401, 403), f"-> {status}")
 
-    if api_key:
+    if api_key and database:
         status, body, _ = call(base, "/api/houses", HOUSE, api_key=api_key)
         created = json.loads(body) if status == 201 else {}
         check("create house with key", status == 201, f"-> id {created.get('id')}")
@@ -120,8 +128,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("base_url")
     parser.add_argument("--api-key", help="also test create/read/estimate/delete")
+    parser.add_argument(
+        "--no-database",
+        action="store_true",
+        help="the deployment has no database (estimates only)",
+    )
     args = parser.parse_args()
-    return run_checks(args.base_url, args.api_key)
+    return run_checks(args.base_url, args.api_key, database=not args.no_database)
 
 
 if __name__ == "__main__":

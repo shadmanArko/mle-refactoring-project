@@ -16,6 +16,7 @@ from kc_house.api.db import Base, make_engine
 from kc_house.api.model_service import EstimatorService, UnknownZipcodeError
 from kc_house.api.observability import configure_logging, request_logging
 from kc_house.api.routers import estimate, houses, meta, pages
+from kc_house.api.secrets import resolve_secrets
 from kc_house.api.settings import Settings
 
 logger = logging.getLogger(__name__)
@@ -27,13 +28,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         configure_logging(settings.log_level)
-        app.state.settings = settings
-        # Fail fast: an app that cannot estimate should never look healthy.
-        app.state.estimator = EstimatorService(settings.model_dir)
-        engine = make_engine(settings.database_url)
+        # Fail fast: an app that cannot estimate should never look healthy, and one
+        # whose configured secrets cannot be read should not silently run without them.
+        resolved = resolve_secrets(settings)
+        app.state.settings = resolved
+        app.state.estimator = EstimatorService(resolved.model_dir)
+        engine = make_engine(resolved.database_url)
         app.state.engine = engine
         app.state.session_factory = sessionmaker(engine, expire_on_commit=False)
-        if settings.create_tables:
+        if resolved.create_tables:
             try:
                 Base.metadata.create_all(engine)
             except SQLAlchemyError:

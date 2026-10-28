@@ -19,5 +19,13 @@ class Settings(BaseSettings):
     api_key: SecretStr | None = None
     open_writes: bool = False
 
+    # On AWS the secrets are never in the environment: the app is given the ARN of
+    # each secret and reads the value from Secrets Manager at start-up (secrets.py).
+    api_key_secret_arn: str | None = None
+    database_secret_arn: str | None = None
+    database_host: str | None = None
+    database_port: int = 5432
+    database_name: str = "houses"
+
     github_url: str = "https://github.com/shadmanArko/mle-refactoring-project"
     log_level: str = "INFO"
