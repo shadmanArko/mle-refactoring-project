@@ -46,7 +46,7 @@ flowchart LR
 | **Tooling friction** | the installed `uv` was too old for the lockfile requirement; a test client library had been superseded; Node 26 is newer than the CDK runtime supports | updated or worked around each, and wrote the version notes into the docs |
 | **A frozen database hung the health check** | an independent review suspected it; I reproduced it by freezing a real Postgres: `/api/health` hung 30 s+ on a re-used pooled connection | unpooled connections with a 2-second connect timeout; re-measured: health answers in 2.0 s, recovery is instant ([ADR-0005](adr/0005-api-design.md)) |
 | **Docs that claimed more than the code** | the same review found a false healthcheck claim, an estimator described as trained on full rows (it is trained on zip-filled rows), stale test counts, and "test set used once" where it is also used to report several scores | corrected each, and strengthened the tests that could not have failed |
-| **CI never ran** | GitHub refused to start any job: "recent account payments have failed or your spending limit needs to be increased" | none of the workflows has run yet. I ran every check locally and said so in the README rather than claim a green pipeline |
+| **CI did not start at first** | for the first several commits GitHub refused to start any job: "recent account payments have failed or your spending limit needs to be increased" | I ran every check locally and said so in the README rather than claim a green pipeline. Once the account was sorted, the first real run passed all four jobs: nothing had been hiding |
 | **Proving things I cannot run** | I did not deploy to AWS, so some behaviour is unproven | the runbook lists exactly what is verified (template, image, secrets code) and what only a real deploy can show (adapter on real events, cold start) |
 
 ## 3. What would you do differently with more time?
@@ -56,8 +56,9 @@ In rough order of value:
 1. **Deploy it and measure.** A live link, a smoke test against it, real cold-start times,
    and a small load test to choose the memory size and throttle values. Today those are
    educated guesses.
-2. **Get CI running.** Resolve the account billing block, then watch the first runs; there
-   will be small fixes, because the workflows have never executed.
+2. **Tighten CI.** It passes, but nothing enforces it yet: require the checks on `main`,
+   add an image vulnerability scan and a coverage floor, and review the Dependabot pull
+   requests.
 3. **A fairness audit.** Zip code and coordinates can stand in for neighbourhood
    demographics. I flagged this in the model card but did not measure it.
 4. **Explain each prediction.** Show a visitor which of their answers moved the price

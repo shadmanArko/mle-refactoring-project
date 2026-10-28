@@ -18,9 +18,9 @@ flowchart LR
 validated, but **it has not been deployed**, so there is no live link yet. See
 [docs/06-aws.md](docs/06-aws.md) for what is verified and what only a real deploy can prove.
 
-**CI note:** the GitHub Actions workflows are written, but GitHub has refused to start any job on this
-account ("recent account payments have failed or your spending limit needs to be increased"), so none has run
-yet. Every check was run locally instead; the exact commands are in the docs.
+**CI:** all four GitHub Actions jobs (checks, notebook, infrastructure, Docker stack) passed on their
+first real run. (For the first commits GitHub refused to start any job over an account billing limit; every
+check was run locally in the meantime, so nothing was waiting to fail.)
 
 ## Try it
 
@@ -71,7 +71,7 @@ untouched test houses. Full detail, limits and a fairness note: [docs/model-card
 | **Tested against reality** | a real Postgres, including stopping the database mid-run |
 | **Infrastructure as code, tested** | CDK template with security assertions; no secret in the template ([docs/06](docs/06-aws.md)) |
 | **Decisions on record** | seven short ADRs, each with a diagram ([docs/adr/](docs/adr/)) |
-| **Automation** | workflows for lint, types, tests with Postgres, a notebook run, template tests and a full Docker stack (written, not yet run: see the CI note); Dependabot watches dependencies |
+| **Automation** | workflows for lint, types, tests with Postgres, a notebook run, template tests and a full Docker stack (all passing); Dependabot watches dependencies |
 
 137 automated tests (118 for the app, 19 for the infrastructure); 7 of the app tests run only when a Postgres URL or the notebook flag is set. About 99% of `src/` is covered.
 

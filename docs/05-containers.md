@@ -74,4 +74,5 @@ about three minutes because it trains the model.
   minutes). Accepted: correctness over speed.
 - Vulnerability scanning is not in place yet. It belongs with the deployment
   hardening, where an image scan will gate the release.
-- The CI `stack` job mirrors these steps but has not run on GitHub yet.
+- The CI `stack` job mirrors these steps (build, start, smoke test) and passed on GitHub's
+  runners. It does not repeat the frozen-database check, which was run locally.
