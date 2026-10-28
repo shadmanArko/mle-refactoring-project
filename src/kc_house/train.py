@@ -8,6 +8,7 @@ import argparse
 import hashlib
 import json
 import logging
+import os
 import platform
 import subprocess
 from collections.abc import Sequence
@@ -75,6 +76,9 @@ class BelowFloorError(RuntimeError):
 
 
 def _git_sha() -> str:
+    # Docker builds have no .git directory, so the build passes the commit in.
+    if provided := os.environ.get("GIT_SHA"):
+        return provided
     try:
         result = subprocess.run(
             ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True

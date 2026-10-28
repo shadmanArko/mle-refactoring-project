@@ -1,0 +1,8 @@
+# Allow-list: the image needs only dependency metadata, the package, and the dataset
+# (used by the training stage, never copied into the runtime image).
+**
+!pyproject.toml
+!uv.lock
+!src/
+!data/King_County_House_prices_dataset.csv
+**/__pycache__

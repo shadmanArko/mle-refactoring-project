@@ -1,0 +1,49 @@
+# Local stack: the API plus Postgres.
+#   cp .env.example .env   (then edit the secrets)
+#   docker compose up --build --wait
+# Open http://localhost:8000 (tester), /presentation (slides), /docs (API).
+name: kc-house
+
+services:
+  db:
+    image: postgres:17@sha256:31ba9c94a03ada9988f2bb493a22a75eef3a185884533e5cdbcd498ea835b08f
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?copy .env.example to .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?copy .env.example to .env}
+      POSTGRES_DB: ${POSTGRES_DB:?copy .env.example to .env}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    # No published port: only the app, on the compose network, can reach the database.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      args:
+        GIT_SHA: ${GIT_SHA:-local}
+    environment:
+      KC_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      KC_API_KEY: ${KC_API_KEY:?copy .env.example to .env}
+      KC_GITHUB_URL: ${KC_GITHUB_URL:-https://github.com/shadmanArko/mle-refactoring-project}
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    # Hardening: nothing is writable, no extra privileges, no Linux capabilities.
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+volumes:
+  postgres-data:

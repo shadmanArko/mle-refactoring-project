@@ -143,3 +143,10 @@ def test_reference_grid_search_finds_the_notebooks_hyperparameters(raw_data):
         "model__regressor__l1_ratio": 0.2,
     }
     assert search.best_score_ == pytest.approx(0.8266, abs=0.01)
+
+
+def test_the_commit_can_be_supplied_by_the_environment(monkeypatch):
+    """Docker builds have no .git directory, so the build passes GIT_SHA in."""
+    monkeypatch.setenv("GIT_SHA", "deadbeefcafe")
+
+    assert train._git_sha() == "deadbeefcafe"
