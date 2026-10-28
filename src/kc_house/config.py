@@ -45,6 +45,12 @@ MODEL_FEATURES = [
     "water_distance",
 ]
 
+# Stopping condition: a model below this held-out R^2 is not shipped.
+# The notebook reaches ~0.84; the grade-only baseline reaches ~0.43.
+MIN_ACCEPTABLE_R2 = 0.80
+
+DEFAULT_ARTIFACTS_DIR = Path("artifacts")
+
 # Hyperparameters chosen by the notebook's grid search.
 ELASTIC_NET_ALPHA = 0.01
 ELASTIC_NET_L1_RATIO = 0.2

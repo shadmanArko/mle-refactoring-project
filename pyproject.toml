@@ -11,10 +11,14 @@ dependencies = [
     "skops>=0.14.0",
 ]
 
+[project.scripts]
+kc-train = "kc_house.train:main"
+
 [dependency-groups]
 dev = [
     "ipykernel>=7.3.0",
     "nbformat>=5.11.1",
+    "pandas-stubs>=3.0.5.260914",
     "pyright>=1.1.414",
     "pytest>=9.2.0",
     "pytest-cov>=7.1.0",
