@@ -15,7 +15,7 @@ from sqlalchemy.orm import sessionmaker
 from kc_house.api.db import Base, make_engine
 from kc_house.api.model_service import EstimatorService, UnknownZipcodeError
 from kc_house.api.observability import configure_logging, request_logging
-from kc_house.api.routers import estimate, houses, meta
+from kc_house.api.routers import estimate, houses, meta, pages
 from kc_house.api.settings import Settings
 
 logger = logging.getLogger(__name__)
@@ -49,6 +49,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.middleware("http")(request_logging)
+    app.include_router(pages.router)
     app.include_router(meta.router)
     app.include_router(estimate.router)
     app.include_router(houses.router)

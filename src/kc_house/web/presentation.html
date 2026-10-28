@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How it was built · King County estimator</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f766e'/%3E%3Cpath d='M16 7 6 15h3v9h5v-6h4v6h5v-9h3z' fill='white'/%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #f6f7f5; --card: #ffffff; --ink: #14201f; --muted: #52625f; --line: #d9e0de;
+  --brand: #0f766e; --brand-soft: #e3f3f1; --warn: #b45309; --warn-soft: #fdf0e7; --ok: #166534; --ok-soft: #e3f5e8;
+  --bad: #b42318; --focus: #0b57d0;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1514; --card: #151f1e; --ink: #e8efee; --muted: #9db0ad; --line: #26363a;
+    --brand: #2dd4bf; --brand-soft: #12302d; --warn: #fdba74; --warn-soft: #2e1f14; --ok: #86efac; --ok-soft: #12301c;
+    --bad: #fca5a5; --focus: #8ab4ff;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 400 clamp(15px, 1.75vw, 24px)/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+a { color: var(--brand); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+.deck { height: 100%; position: relative; }
+.slide { position: absolute; inset: 0; display: none; flex-direction: column; justify-content: center; padding: 4vh 7vw 9vh; overflow-y: auto; }
+.slide.active { display: flex; }
+@media (prefers-reduced-motion: no-preference) { .slide.active { animation: in .3s ease-out; } @keyframes in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } } }
+.kicker { color: var(--brand); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: .62em; margin: 0 0 .4em; }
+h1 { font-size: 2.5em; line-height: 1.08; letter-spacing: -.02em; margin: 0 0 .3em; }
+h2 { font-size: 1.75em; line-height: 1.15; letter-spacing: -.015em; margin: 0 0 .6em; }
+p { margin: 0 0 .7em; }
+.lead { font-size: 1.15em; color: var(--muted); max-width: 34em; }
+.muted { color: var(--muted); }
+.grid { display: grid; gap: 1em; }
+.cols-2 { grid-template-columns: 1fr 1fr; } .cols-3 { grid-template-columns: repeat(3, 1fr); } .cols-4 { grid-template-columns: repeat(4, 1fr); }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: .9em 1.1em; }
+.card h3 { margin: 0 0 .35em; font-size: 1em; }
+.card p { margin: 0; color: var(--muted); font-size: .85em; }
+.stat { text-align: left; }
+.stat b { display: block; font-size: 1.9em; line-height: 1.1; color: var(--brand); letter-spacing: -.02em; }
+.stat span { color: var(--muted); font-size: .8em; }
+table { border-collapse: collapse; width: 100%; font-size: .85em; }
+th, td { text-align: left; padding: .55em .8em; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; font-size: .85em; }
+td.fix { color: var(--ok); font-weight: 600; }
+.tag { display: inline-block; font-size: .62em; font-weight: 700; padding: .15em .65em; border-radius: 999px; letter-spacing: .03em; vertical-align: middle; }
+.tag.done { background: var(--ok-soft); color: var(--ok); } .tag.next { background: var(--warn-soft); color: var(--warn); }
+.flow { display: flex; flex-wrap: wrap; align-items: stretch; gap: .5em; margin: .6em 0 1em; }
+.flow .step { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: .55em .8em; font-weight: 600; font-size: .85em; }
+.flow .step small { display: block; font-weight: 400; color: var(--muted); font-size: .78em; }
+.flow .step.hot { border-color: var(--brand); background: var(--brand-soft); }
+.flow .arrow { align-self: center; color: var(--muted); }
+.callout { border-left: 4px solid var(--warn); background: var(--warn-soft); padding: .7em 1em; border-radius: 0 10px 10px 0; font-size: .85em; }
+.callout.good { border-color: var(--brand); background: var(--brand-soft); }
+ul.tight { margin: 0; padding-left: 1.1em; } ul.tight li { margin: .3em 0; }
+svg { width: 100%; height: auto; display: block; }
+svg text { fill: var(--ink); font: 500 13px system-ui, sans-serif; }
+svg .m { fill: var(--muted); font-weight: 400; font-size: 11.5px; }
+svg .box { fill: var(--card); stroke: var(--line); stroke-width: 1.2; }
+svg .acc { fill: var(--brand-soft); stroke: var(--brand); stroke-width: 1.4; }
+svg .plan { fill: none; stroke: var(--warn); stroke-width: 1.4; stroke-dasharray: 5 4; }
+svg .ln { stroke: var(--muted); stroke-width: 1.4; fill: none; marker-end: url(#ah); }
+svg .bar { fill: var(--line); } svg .bar.top { fill: var(--brand); } svg .bar.ref { fill: var(--warn); }
+.nav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: .8em; padding: .6em 1.2em .8em; background: linear-gradient(transparent, var(--bg) 40%); z-index: 5; }
+.nav button { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 10px; width: 2.6em; height: 2.6em; font-size: .9em; cursor: pointer; }
+.nav button:hover { border-color: var(--brand); }
+.progress { flex: 1; height: 4px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.progress i { display: block; height: 100%; width: 0; background: var(--brand); transition: width .25s; }
+.count { color: var(--muted); font-size: .8em; min-width: 4.5em; text-align: right; font-variant-numeric: tabular-nums; }
+.button { display: inline-block; background: var(--brand); color: var(--bg); text-decoration: none; font-weight: 700; padding: .7em 1.4em; border-radius: 12px; margin: .2em .6em .2em 0; }
+.button.alt { background: transparent; color: var(--brand); border: 1.5px solid var(--brand); }
+@media (max-width: 760px) {
+  .cols-2, .cols-3, .cols-4 { grid-template-columns: 1fr; }
+  .slide { padding: 3vh 6vw 10vh; justify-content: flex-start; }
+  h1 { font-size: 2em; } h2 { font-size: 1.5em; }
+}
+@media print {
+  body { overflow: visible; height: auto; } .nav { display: none; }
+  .deck { height: auto; } .slide { display: flex !important; position: relative; min-height: 100vh; page-break-after: always; animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="deck" id="deck" role="region" aria-roledescription="presentation" aria-label="How the King County estimator was built">
+
+<section class="slide" aria-label="Title">
+  <p class="kicker">Refactoring project</p>
+  <h1>From a messy notebook to a live price estimator</h1>
+  <p class="lead">How a working-but-fragile Jupyter notebook became a tested pipeline, a trustworthy model and a service anyone can try.</p>
+  <p class="muted">Use the arrow keys, swipe, or the buttons below.</p>
+</section>
+
+<section class="slide" aria-label="The problem">
+  <p class="kicker">1 · Problem</p>
+  <h2>The only working answer was a notebook</h2>
+  <div class="grid cols-3">
+    <div class="card"><h3>Only experts can run it</h3><p>Cells in order, state hidden in variables, pandas knowledge required.</p></div>
+    <div class="card"><h3>Hard to trust</h3><p>Hidden leakage between train and test, a row dropped by its position number.</p></div>
+    <div class="card"><h3>Nobody else can use it</h3><p>A home buyer wants a price, not a notebook. The model could not be called by an app.</p></div>
+  </div>
+</section>
+
+<section class="slide" aria-label="What I found">
+  <p class="kicker">2 · Reading before refactoring</p>
+  <h2>What I found in the notebook</h2>
+  <table>
+    <thead><tr><th>In the notebook</th><th>What I did</th></tr></thead>
+    <tbody>
+      <tr><td>Water-distance feature built from <b>all</b> rows, test rows included</td><td class="fix">A fitted step that learns from training rows only</td></tr>
+      <tr><td>One row dropped by its position (<code>drop(15856)</code>)</td><td class="fix">A rule: <code>bedrooms == 33</code>, training only</td></tr>
+      <tr><td>Python loops over 21,000 rows (minutes)</td><td class="fix">Vectorised: 0.08 seconds</td></tr>
+      <tr><td>Text says "price per square foot", code predicts price</td><td class="fix">Followed the code, flagged the mismatch</td></tr>
+      <tr><td>177 houses sold twice, so a random split can leak</td><td class="fix">Also report a split grouped by house</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="slide" aria-label="The idea">
+  <p class="kicker">3 · Idea</p>
+  <h2>Six questions in, an honest price out</h2>
+  <p class="lead">A visitor cannot type 19 columns. So the product asks only what anyone knows, and fills in the rest with what is typical for that zip code.</p>
+  <div class="flow">
+    <div class="step">Bedrooms<small>how many</small></div><div class="step">Bathrooms<small>incl. halves</small></div><div class="step">Living area<small>square feet</small></div>
+    <div class="step">Quality<small>basic to luxury</small></div><div class="step">Zip code<small>70 areas</small></div><div class="step">Waterfront<small>yes or no</small></div>
+    <span class="arrow">→</span><div class="step hot">Price + range<small>and a plain caveat</small></div>
+  </div>
+  <p class="muted">The range matters: a single number would pretend to a precision the data does not have.</p>
+</section>
+
+<section class="slide" aria-label="Architecture">
+  <p class="kicker">4 · Design</p>
+  <h2>One code path for training and serving</h2>
+  <svg viewBox="0 0 720 250" role="img" aria-label="Architecture: training produces model files that the API loads; the browser calls the API; the API stores houses in a database. Containers and AWS Lambda are planned.">
+    <defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--muted)"/></marker></defs>
+    <rect class="box" x="10" y="20" width="150" height="54" rx="8"/><text x="85" y="44" text-anchor="middle">Raw CSV</text><text class="m" x="85" y="62" text-anchor="middle">hashed</text>
+    <rect class="acc" x="200" y="20" width="170" height="54" rx="8"/><text x="285" y="44" text-anchor="middle">kc_house package</text><text class="m" x="285" y="62" text-anchor="middle">pipeline + training</text>
+    <rect class="box" x="410" y="20" width="150" height="54" rx="8"/><text x="485" y="44" text-anchor="middle">Model files</text><text class="m" x="485" y="62" text-anchor="middle">+ metrics, card</text>
+    <path class="ln" d="M160 47H198"/><path class="ln" d="M370 47H408"/>
+    <path class="ln" d="M485 74V132"/>
+    <rect class="box" x="10" y="150" width="130" height="54" rx="8"/><text x="75" y="174" text-anchor="middle">Browser</text><text class="m" x="75" y="192" text-anchor="middle">one-page tester</text>
+    <rect class="acc" x="190" y="136" width="300" height="82" rx="8"/><text x="340" y="160" text-anchor="middle">FastAPI service</text><text class="m" x="340" y="180" text-anchor="middle">model in memory · estimates need no database</text><text class="m" x="340" y="198" text-anchor="middle">closed-by-default writes · JSON logs</text>
+    <rect class="box" x="540" y="150" width="130" height="54" rx="8"/><text x="605" y="174" text-anchor="middle">Database</text><text class="m" x="605" y="192" text-anchor="middle">SQLite · Postgres</text>
+    <path class="ln" d="M140 177H188"/><path class="ln" d="M490 177H538"/>
+    <rect class="plan" x="176" y="124" width="328" height="106" rx="12"/><text class="m" x="184" y="240">planned: Docker image on AWS Lambda behind a public URL</text>
+  </svg>
+</section>
+
+<section class="slide" aria-label="The pipeline">
+  <p class="kicker">5 · Build</p>
+  <h2>The notebook's steps became one pipeline</h2>
+  <div class="flow">
+    <div class="step">Clean<small>basement, gaps, last change</small></div><span class="arrow">→</span>
+    <div class="step">Centre distance<small>stateless</small></div><span class="arrow">→</span>
+    <div class="step hot">Water distance<small>learns from training rows</small></div><span class="arrow">→</span>
+    <div class="step">19 features</div><span class="arrow">→</span><div class="step">Model</div>
+  </div>
+  <div class="grid cols-2">
+    <div class="card"><h3>Leakage is prevented by construction</h3><p>Anything learned from data lives inside the pipeline, so cross-validation and the test set can never influence a training feature. A test proves it.</p></div>
+    <div class="card"><h3>Tiny, pure functions</h3><p>One function per cleaning step, each unit tested and none changing its input. The same code serves training, the notebook and the API.</p></div>
+  </div>
+</section>
+
+<section class="slide" aria-label="Proof of the refactor">
+  <p class="kicker">6 · Proof</p>
+  <h2>The refactor reproduces the notebook</h2>
+  <div class="grid cols-4">
+    <div class="card stat"><b>19 / 19</b><span>features equal to the notebook within 1e-9</span></div>
+    <div class="card stat"><b>identical</b><span>train and test rows (hash match)</span></div>
+    <div class="card stat"><b>0.8447</b><span>held-out R² vs 0.8443 in the notebook</span></div>
+    <div class="card stat"><b>0.08 s</b><span>features for 21,596 houses, was minutes</span></div>
+  </div>
+  <p class="muted" style="margin-top:1em">Method: run the notebook's own cells once, freeze the outputs, and make the new code match them. The tiny 0.0004 difference is expected: the water feature is now learned from training rows only, as it should be.</p>
+</section>
+
+<section class="slide" aria-label="Model comparison">
+  <p class="kicker">7 · Evidence</p>
+  <h2>The notebook's model was not the best one</h2>
+  <svg viewBox="0 0 720 270" role="img" aria-label="Cross-validated R squared: mean baseline 0, grade only 0.45, ridge 0.74, notebook ElasticNet 0.83, random forest 0.87, tuned gradient boosting 0.89.">
+    <g font-size="13">
+      <text x="0" y="31">Predict the average</text><rect class="bar" x="190" y="16" width="1" height="22"/><text class="m" x="196" y="31">0.00</text>
+      <text x="0" y="75">Grade only</text><rect class="bar" x="190" y="60" width="203" height="22" rx="4"/><text class="m" x="399" y="75">0.45</text>
+      <text x="0" y="119">Ridge</text><rect class="bar" x="190" y="104" width="333" height="22" rx="4"/><text class="m" x="529" y="119">0.74</text>
+      <text x="0" y="163">Notebook ElasticNet</text><rect class="bar ref" x="190" y="148" width="373" height="22" rx="4"/><text class="m" x="569" y="163">0.83</text>
+      <text x="0" y="207">Random forest</text><rect class="bar" x="190" y="192" width="391" height="22" rx="4"/><text class="m" x="587" y="207">0.87</text>
+      <text x="0" y="251">Tuned gradient boosting</text><rect class="bar top" x="190" y="236" width="399" height="22" rx="4"/><text class="m" x="595" y="251">0.89</text>
+    </g>
+  </svg>
+  <p class="muted">Cross-validated R² on training data, same features and folds for every model. The gap (0.06) is several times the fold-to-fold noise, so I shipped gradient boosting and kept the notebook's model as the documented reference.</p>
+</section>
+
+<section class="slide" aria-label="Honesty checks">
+  <p class="kicker">8 · Honesty</p>
+  <h2>Is the number inflated?</h2>
+  <div class="grid cols-3">
+    <div class="card stat"><b>0.880</b><span>random split (the notebook's way)</span></div>
+    <div class="card stat"><b>0.881</b><span>same house never on both sides</span></div>
+    <div class="card stat"><b>0.877</b><span>train on the past, test on the future</span></div>
+  </div>
+  <div class="grid cols-2" style="margin-top:1em">
+    <div class="callout good"><b>The score holds up</b> under stricter splits, and the test set was used once, only to judge the champion.</div>
+    <div class="callout"><b>Known weakness:</b> it pulls estimates toward the middle. Cheap houses are overestimated by about $24k, the top quarter underestimated by about $47k.</div>
+  </div>
+</section>
+
+<section class="slide" aria-label="The six-question estimator">
+  <p class="kicker">9 · Product trade-off</p>
+  <h2>What six questions cost</h2>
+  <div class="grid cols-4">
+    <div class="card stat"><b>0.880</b><span>full model, 19 features</span></div>
+    <div class="card stat"><b>0.840</b><span>six-question estimator</span></div>
+    <div class="card stat"><b>10.5%</b><span>typical miss, in percent of price</span></div>
+    <div class="card stat"><b>80.3%</b><span>of test houses fell inside the shown range</span></div>
+  </div>
+  <p class="muted" style="margin-top:1em">The range multiplies the estimate by 0.78 and 1.22. It was calibrated on out-of-fold training predictions, so no test data shaped it, and it landed on its 80% target.</p>
+</section>
+
+<section class="slide" aria-label="Engineering practices">
+  <p class="kicker">10 · How it is built</p>
+  <h2>Practices you can check in the repo</h2>
+  <div class="grid cols-3">
+    <div class="card"><h3>Tests <span class="tag done">done</span></h3><p>Over 80 automated tests; about 99% of the source is covered; leakage and parity have their own tests.</p></div>
+    <div class="card"><h3>Continuous integration <span class="tag done">done</span></h3><p>Lint, format, types and tests on every pull request.</p></div>
+    <div class="card"><h3>Decisions on record <span class="tag done">done</span></h3><p>Five short architecture decision records, each with a diagram.</p></div>
+    <div class="card"><h3>Safe by default <span class="tag done">done</span></h3><p>Writes need an API key; inputs are bounded; unknown zip codes get a clear message.</p></div>
+    <div class="card"><h3>Reproducible <span class="tag done">done</span></h3><p>Locked dependencies; every model records its code version, data hash and settings.</p></div>
+    <div class="card"><h3>Container + AWS Lambda <span class="tag next">next</span></h3><p>Non-root multi-stage image, then a public serverless URL with throttling.</p></div>
+  </div>
+</section>
+
+<section class="slide" aria-label="Reflection">
+  <p class="kicker">11 · Reflection</p>
+  <h2>Steps, challenges, next time</h2>
+  <div class="grid cols-3">
+    <div class="card"><h3>Steps</h3><ul class="tight muted" style="font-size:.82em">
+      <li>Read the notebook, freeze its numbers</li><li>Refactor into a tested pipeline</li><li>Compare and tune models</li><li>Build the API and CRUD</li><li>Add the six-question page</li><li>Containerise, deploy</li></ul></div>
+    <div class="card"><h3>Challenges</h3><ul class="tight muted" style="font-size:.82em">
+      <li>Leakage hidden inside a feature</li><li>Text and code disagreed about the target</li><li>The "obvious" model was not the best</li><li>Users cannot supply 19 inputs</li><li>Keeping a public demo safe</li></ul></div>
+    <div class="card"><h3>With more time</h3><ul class="tight muted" style="font-size:.82em">
+      <li>Database migrations (Alembic)</li><li>Drift monitoring and scheduled retraining</li><li>Fairness audit of location features</li><li>Explanations per prediction (SHAP)</li><li>Postgres in CI</li></ul></div>
+  </div>
+</section>
+
+<section class="slide" aria-label="Try it">
+  <p class="kicker">Your turn</p>
+  <h1>Try it yourself</h1>
+  <p class="lead">Describe a house in six clicks and see the estimate and its range.</p>
+  <p><a class="button" href=".">Open the estimator</a><a class="button alt" id="gh" href="#" hidden>Read the code</a><a class="button alt" href="docs">API documentation</a></p>
+  <p class="muted">Built from 2014 to 2015 King County sales. A rough guide, not an appraisal.</p>
+</section>
+
+</div>
+
+<div class="nav">
+  <button id="prev" aria-label="Previous slide">←</button>
+  <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+  <span class="count" id="count" aria-live="polite"></span>
+  <button id="next" aria-label="Next slide">→</button>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+  var index = 0;
+  function go(n) {
+    index = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach(function (s, i) { s.classList.toggle("active", i === index); s.scrollTop = 0; });
+    document.getElementById("bar").style.width = ((index + 1) / slides.length * 100) + "%";
+    document.getElementById("count").textContent = (index + 1) + " / " + slides.length;
+    document.getElementById("prev").disabled = index === 0;
+    document.getElementById("next").disabled = index === slides.length - 1;
+    history.replaceState(null, "", "#" + (index + 1));
+  }
+  document.getElementById("prev").addEventListener("click", function () { go(index - 1); });
+  document.getElementById("next").addEventListener("click", function () { go(index + 1); });
+  document.addEventListener("keydown", function (e) {
+    if (e.altKey || e.ctrlKey || e.metaKey) { return; }
+    if (["ArrowRight", "PageDown", " ", "Enter"].indexOf(e.key) > -1 && e.target.tagName !== "A" && e.target.tagName !== "BUTTON") { e.preventDefault(); go(index + 1); }
+    else if (["ArrowLeft", "PageUp"].indexOf(e.key) > -1) { e.preventDefault(); go(index - 1); }
+    else if (e.key === "Home") { go(0); } else if (e.key === "End") { go(slides.length - 1); }
+  });
+  var startX = null;
+  document.addEventListener("touchstart", function (e) { startX = e.changedTouches[0].clientX; }, { passive: true });
+  document.addEventListener("touchend", function (e) {
+    if (startX === null) { return; }
+    var dx = e.changedTouches[0].clientX - startX; startX = null;
+    if (Math.abs(dx) > 60) { go(index + (dx < 0 ? 1 : -1)); }
+  }, { passive: true });
+  function fromHash() {
+    var wanted = parseInt(location.hash.slice(1), 10);
+    go(isNaN(wanted) ? 0 : wanted - 1);
+  }
+  window.addEventListener("hashchange", function () {
+    var wanted = parseInt(location.hash.slice(1), 10);
+    if (!isNaN(wanted) && wanted - 1 !== index) { go(wanted - 1); }
+  });
+  fromHash();
+  fetch(new URL("api/meta", document.baseURI)).then(function (r) { return r.json(); }).then(function (m) {
+    if (m.github_url) { var a = document.getElementById("gh"); a.href = m.github_url; a.hidden = false; }
+  }).catch(function () {});
+})();
+</script>
+</body>
+</html>

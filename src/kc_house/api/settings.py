@@ -19,5 +19,5 @@ class Settings(BaseSettings):
     api_key: SecretStr | None = None
     open_writes: bool = False
 
-    github_url: str = ""
+    github_url: str = "https://github.com/shadmanArko/mle-refactoring-project"
     log_level: str = "INFO"

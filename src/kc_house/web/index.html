@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What is my house worth? · King County estimator</title>
+<meta name="description" content="Answer six questions and get a price estimate for a house in King County, Washington.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f766e'/%3E%3Cpath d='M16 7 6 15h3v9h5v-6h4v6h5v-9h3z' fill='white'/%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #f6f7f5; --card: #ffffff; --ink: #14201f; --muted: #5b6b69; --line: #dfe5e3;
+  --brand: #0f766e; --brand-ink: #ffffff; --brand-soft: #e3f3f1; --warn: #9a3412; --warn-soft: #fdf0e7;
+  --focus: #0b57d0; --shadow: 0 1px 2px rgba(20,32,31,.06), 0 8px 24px rgba(20,32,31,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1514; --card: #151f1e; --ink: #e8efee; --muted: #9db0ad; --line: #26363a;
+    --brand: #2dd4bf; --brand-ink: #062a27; --brand-soft: #12302d; --warn: #fdba74; --warn-soft: #2e1f14;
+    --focus: #8ab4ff; --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+a { color: var(--brand); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+.wrap { max-width: 720px; margin: 0 auto; padding: 0 16px 48px; }
+header { padding: 32px 0 20px; }
+.eyebrow { color: var(--brand); font-weight: 600; font-size: .85rem; letter-spacing: .06em; text-transform: uppercase; }
+h1 { margin: 6px 0 8px; font-size: clamp(1.7rem, 5vw, 2.4rem); line-height: 1.15; letter-spacing: -.02em; }
+.lede { margin: 0; color: var(--muted); font-size: 1.05rem; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; box-shadow: var(--shadow); }
+.card + .card { margin-top: 16px; }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+.presets span { color: var(--muted); font-size: .9rem; align-self: center; margin-right: 2px; }
+.chip {
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink); border-radius: 999px;
+  padding: 7px 14px; font: inherit; font-size: .9rem; cursor: pointer;
+}
+.chip:hover { border-color: var(--brand); }
+.grid { display: grid; gap: 18px; grid-template-columns: 1fr 1fr; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field.wide { grid-column: 1 / -1; }
+label, .legend { font-weight: 600; font-size: .95rem; }
+.hint { color: var(--muted); font-size: .85rem; font-weight: 400; }
+input, select {
+  font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line);
+  border-radius: 10px; padding: 11px 12px; width: 100%; min-height: 46px;
+}
+input:hover, select:hover { border-color: var(--muted); }
+.stepper { display: flex; gap: 8px; }
+.stepper button {
+  flex: 0 0 46px; min-height: 46px; border-radius: 10px; border: 1px solid var(--line);
+  background: var(--card); color: var(--ink); font-size: 1.3rem; cursor: pointer;
+}
+.stepper input { text-align: center; }
+.quality { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; border: 0; padding: 0; margin: 0; }
+.quality label {
+  position: relative; display: flex; flex-direction: column; gap: 2px; align-items: flex-start;
+  border: 1px solid var(--line); border-radius: 12px; padding: 10px; cursor: pointer; font-weight: 600; background: var(--card);
+}
+.quality label small { font-weight: 400; color: var(--muted); font-size: .78rem; line-height: 1.3; }
+.quality input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.quality label:has(input:checked) { border-color: var(--brand); background: var(--brand-soft); box-shadow: inset 0 0 0 1px var(--brand); }
+.quality label:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+.switch { display: flex; align-items: center; gap: 12px; cursor: pointer; font-weight: 600; }
+.switch input { width: 22px; height: 22px; min-height: 0; accent-color: var(--brand); }
+.error { color: var(--warn); font-size: .88rem; min-height: 1.2em; margin: 0; }
+.actions { display: flex; gap: 12px; align-items: center; margin-top: 22px; flex-wrap: wrap; }
+.primary {
+  background: var(--brand); color: var(--brand-ink); border: 0; border-radius: 12px; font: inherit;
+  font-weight: 700; padding: 14px 26px; min-height: 50px; cursor: pointer; font-size: 1.05rem;
+}
+.primary:disabled { opacity: .6; cursor: progress; }
+.fine { color: var(--muted); font-size: .85rem; }
+#result[hidden] { display: none; }
+#result { border-color: var(--brand); }
+.price-label { color: var(--muted); font-size: .9rem; margin: 0; }
+.price { font-size: clamp(2.4rem, 9vw, 3.4rem); font-weight: 800; letter-spacing: -.03em; line-height: 1.1; margin: 2px 0 14px; }
+.range { position: relative; height: 10px; border-radius: 999px; background: var(--brand-soft); margin: 22px 6px 8px; }
+.range i { position: absolute; top: 50%; width: 20px; height: 20px; border-radius: 50%; background: var(--brand); border: 3px solid var(--card); transform: translate(-50%, -50%); box-shadow: 0 0 0 1px var(--brand); }
+.range-labels { display: flex; justify-content: space-between; font-weight: 700; }
+.range-labels small { display: block; color: var(--muted); font-weight: 400; font-size: .78rem; }
+.explain { margin: 16px 0 0; color: var(--muted); }
+.caveat { margin: 14px 0 0; padding: 12px 14px; border-radius: 12px; background: var(--warn-soft); color: var(--ink); font-size: .9rem; }
+.steps { display: grid; gap: 14px; grid-template-columns: repeat(3, 1fr); margin: 12px 0 0; padding: 0; list-style: none; counter-reset: s; }
+.steps li { counter-increment: s; font-size: .92rem; color: var(--muted); }
+.steps li::before { content: counter(s); display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--brand-soft); color: var(--brand); font-weight: 700; margin-bottom: 6px; }
+.steps b { display: block; color: var(--ink); }
+h2 { font-size: 1.15rem; margin: 0; }
+footer { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 8px 20px; color: var(--muted); font-size: .88rem; }
+footer .sep { flex-basis: 100%; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 620px) {
+  .grid { grid-template-columns: 1fr; }
+  .quality { grid-template-columns: 1fr 1fr; }
+  .steps { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  #result:not([hidden]) { animation: rise .35s ease-out; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">King County, Washington</div>
+    <h1>What is my house worth?</h1>
+    <p class="lede">Answer six quick questions and get a price estimate, with an honest range.</p>
+  </header>
+
+  <main>
+    <form id="form" class="card" novalidate>
+      <div class="presets" role="group" aria-label="Example houses">
+        <span>Try an example:</span>
+        <button type="button" class="chip" data-preset="family">Seattle family home</button>
+        <button type="button" class="chip" data-preset="suburb">Suburban 4-bedroom</button>
+        <button type="button" class="chip" data-preset="starter">Starter home</button>
+        <button type="button" class="chip" data-preset="lake">Lakefront luxury</button>
+      </div>
+
+      <div class="grid">
+        <div class="field">
+          <label for="bedrooms">Bedrooms</label>
+          <div class="stepper">
+            <button type="button" id="bed-minus" aria-label="One fewer bedroom">−</button>
+            <input id="bedrooms" type="number" inputmode="numeric" min="0" max="12" step="1" value="3">
+            <button type="button" id="bed-plus" aria-label="One more bedroom">+</button>
+          </div>
+          <p class="error" id="bedrooms-error" aria-live="polite"></p>
+        </div>
+
+        <div class="field">
+          <label for="bathrooms">Bathrooms <span class="hint">(a half bath has no shower)</span></label>
+          <select id="bathrooms"></select>
+          <p class="error" aria-hidden="true"></p>
+        </div>
+
+        <div class="field">
+          <label for="sqft">Living area <span class="hint">(square feet, inside the house)</span></label>
+          <input id="sqft" type="number" inputmode="numeric" min="300" max="14000" step="50" value="1800">
+          <p class="hint" id="sqft-hint">about 167 square metres</p>
+          <p class="error" id="sqft-error" aria-live="polite"></p>
+        </div>
+
+        <div class="field">
+          <label for="zipcode">Zip code</label>
+          <input id="zipcode" list="zip-list" type="text" inputmode="numeric" maxlength="5" placeholder="e.g. 98103" autocomplete="postal-code">
+          <datalist id="zip-list"></datalist>
+          <p class="error" id="zipcode-error" aria-live="polite"></p>
+        </div>
+
+        <fieldset class="field wide" style="border:0;padding:0;margin:0">
+          <legend class="legend" style="padding:0;margin-bottom:6px">Quality of the build and finishes</legend>
+          <div class="quality" id="quality"></div>
+        </fieldset>
+
+        <div class="field wide">
+          <label class="switch"><input id="waterfront" type="checkbox"> On the water (lake or sound front)</label>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="primary" id="go" type="submit">Estimate price</button>
+        <span class="fine" id="status" role="status"></span>
+      </div>
+    </form>
+
+    <section id="result" class="card" hidden aria-live="polite" tabindex="-1">
+      <p class="price-label">Estimated sale price</p>
+      <p class="price" id="price"></p>
+      <div class="range" aria-hidden="true"><i id="marker"></i></div>
+      <div class="range-labels">
+        <span><small>Low end</small><span id="low"></span></span>
+        <span style="text-align:right"><small>High end</small><span id="high"></span></span>
+      </div>
+      <p class="explain" id="explain"></p>
+      <p class="caveat" id="caveat"></p>
+    </section>
+
+    <section class="card" aria-labelledby="how">
+      <h2 id="how">How does it work?</h2>
+      <ol class="steps">
+        <li><b>You describe the house</b>Six facts anyone knows.</li>
+        <li><b>It fills in the rest</b>Typical lot, view and age for that zip code.</li>
+        <li><b>A model compares it</b>Trained on about 21,000 real sales from 2014 to 2015.</li>
+      </ol>
+      <p class="fine" style="margin-top:16px">Built as a refactoring project: notebook to tested pipeline to live service.
+        <a href="presentation">See how it was built</a>.</p>
+    </section>
+  </main>
+
+  <footer>
+    <a href="presentation">Presentation</a>
+    <a id="github" href="#" hidden>Code on GitHub</a>
+    <a href="docs">API documentation</a>
+    <span class="sep" id="model-line"></span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var api = function (path) { return new URL("api/" + path, document.baseURI).toString(); };
+  var $ = function (id) { return document.getElementById(id); };
+  var money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+
+  var QUALITY = [
+    { grade: 5, name: "Basic", note: "Older or budget finishes" },
+    { grade: 7, name: "Standard", note: "Typical for its age" },
+    { grade: 8, name: "Better", note: "Good finishes" },
+    { grade: 10, name: "High-end", note: "Custom, high quality" },
+    { grade: 12, name: "Luxury", note: "Top-tier custom" }
+  ];
+  var PRESETS = {
+    family: { bedrooms: 3, bathrooms: 2, sqft: 1800, grade: 7, zipcode: 98103, waterfront: false },
+    suburb: { bedrooms: 4, bathrooms: 2.5, sqft: 2600, grade: 8, zipcode: 98052, waterfront: false },
+    starter: { bedrooms: 2, bathrooms: 1, sqft: 900, grade: 5, zipcode: 98118, waterfront: false },
+    lake: { bedrooms: 5, bathrooms: 4, sqft: 4500, grade: 12, zipcode: 98039, waterfront: true }
+  };
+  var zipcodes = [];
+
+  function buildQuality() {
+    $("quality").innerHTML = QUALITY.map(function (q, i) {
+      return '<label><input type="radio" name="grade" value="' + q.grade + '"' + (q.grade === 7 ? " checked" : "") + '>' +
+        q.name + "<small>" + q.note + "</small></label>";
+    }).join("");
+  }
+  function buildBathrooms() {
+    var options = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8];
+    $("bathrooms").innerHTML = options.map(function (n) {
+      return '<option value="' + n + '"' + (n === 2 ? " selected" : "") + ">" + n + "</option>";
+    }).join("");
+  }
+  function grade() { return Number(document.querySelector('input[name="grade"]:checked').value); }
+
+  function applyPreset(p) {
+    $("bedrooms").value = p.bedrooms;
+    $("bathrooms").value = String(p.bathrooms);
+    $("sqft").value = p.sqft;
+    $("zipcode").value = p.zipcode;
+    $("waterfront").checked = p.waterfront;
+    document.querySelector('input[name="grade"][value="' + p.grade + '"]').checked = true;
+    updateSqftHint();
+    clearErrors();
+  }
+
+  function updateSqftHint() {
+    var sqft = Number($("sqft").value);
+    $("sqft-hint").textContent = sqft > 0 ? "about " + Math.round(sqft * 0.0929).toLocaleString("en-US") + " square metres" : "";
+  }
+  function clearErrors() {
+    ["bedrooms", "sqft", "zipcode"].forEach(function (k) { $(k + "-error").textContent = ""; });
+  }
+
+  function validate() {
+    clearErrors();
+    var ok = true, first = null;
+    function fail(field, message) {
+      $(field + "-error").textContent = message; ok = false;
+      if (!first) { first = $(field === "sqft" ? "sqft" : field); }
+    }
+    var beds = Number($("bedrooms").value);
+    if (!Number.isInteger(beds) || beds < 0 || beds > 12) { fail("bedrooms", "Enter a whole number from 0 to 12."); }
+    var sqft = Number($("sqft").value);
+    if (!(sqft >= 300 && sqft <= 14000)) { fail("sqft", "Enter between 300 and 14,000 square feet."); }
+    var zip = Number($("zipcode").value);
+    if (zipcodes.length && zipcodes.indexOf(zip) === -1) { fail("zipcode", "Pick a zip code from the list (King County only)."); }
+    else if (!zipcodes.length && !(zip >= 98001 && zip <= 98199)) { fail("zipcode", "Enter a King County zip code, like 98103."); }
+    if (first) { first.focus(); }
+    return ok;
+  }
+
+  function friendly(status, body) {
+    if (status === 422 && body && typeof body.detail === "string") { return body.detail; }
+    if (status === 422) { return "Some answers look out of range. Please check the form."; }
+    if (status === 503) { return "The service is busy. Please try again in a moment."; }
+    return "Something went wrong (" + status + "). Please try again.";
+  }
+
+  function show(data) {
+    $("price").textContent = money.format(data.estimate);
+    $("low").textContent = money.format(data.low);
+    $("high").textContent = money.format(data.high);
+    var span = data.high - data.low;
+    var pos = span > 0 ? Math.min(100, Math.max(0, ((data.estimate - data.low) / span) * 100)) : 50;
+    $("marker").style.left = pos + "%";
+    $("explain").textContent = "About " + Math.round(data.coverage * 100) + "% of houses like this sold for a price inside this range. " +
+      "Typical miss is around " + String(Number(data.typical_error_pct.toFixed(1))) + "% of the price.";
+    $("caveat").textContent = data.note;
+    var box = $("result");
+    box.hidden = false;
+    box.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
+    box.focus({ preventScroll: true });
+  }
+
+  $("form").addEventListener("submit", function (event) {
+    event.preventDefault();
+    if (!validate()) { return; }
+    var button = $("go");
+    button.disabled = true;
+    $("status").textContent = "Estimating…";
+    fetch(api("estimate"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        bedrooms: Number($("bedrooms").value),
+        bathrooms: Number($("bathrooms").value),
+        sqft_living: Number($("sqft").value),
+        grade: grade(),
+        zipcode: Number($("zipcode").value),
+        waterfront: $("waterfront").checked
+      })
+    }).then(function (response) {
+      return response.json().catch(function () { return null; }).then(function (body) {
+        if (!response.ok) { throw new Error(friendly(response.status, body)); }
+        return body;
+      });
+    }).then(function (data) {
+      $("status").textContent = "";
+      show(data);
+    }).catch(function (error) {
+      $("status").textContent = error instanceof TypeError ? "Could not reach the server. Check your connection." : error.message;
+    }).then(function () { button.disabled = false; });
+  });
+
+  document.querySelectorAll("[data-preset]").forEach(function (chip) {
+    chip.addEventListener("click", function () { applyPreset(PRESETS[chip.dataset.preset]); });
+  });
+  $("bed-minus").addEventListener("click", function () { $("bedrooms").value = Math.max(0, Number($("bedrooms").value) - 1); });
+  $("bed-plus").addEventListener("click", function () { $("bedrooms").value = Math.min(12, Number($("bedrooms").value) + 1); });
+  $("sqft").addEventListener("input", updateSqftHint);
+
+  buildQuality();
+  buildBathrooms();
+  applyPreset(PRESETS.family);
+
+  fetch(api("zipcodes")).then(function (r) { return r.json(); }).then(function (list) {
+    zipcodes = list;
+    $("zip-list").innerHTML = list.map(function (z) { return '<option value="' + z + '">'; }).join("");
+  }).catch(function () { /* the form still works; the server validates */ });
+
+  fetch(api("meta")).then(function (r) { return r.json(); }).then(function (meta) {
+    if (meta.github_url) { var link = $("github"); link.href = meta.github_url; link.hidden = false; }
+    var m = meta.model;
+    $("model-line").textContent = "Model " + m.model_version + " · trained on sales from " +
+      m.sale_dates[0].slice(0, 4) + " to " + m.sale_dates[1].slice(0, 4) + " · not an appraisal";
+  }).catch(function () {});
+})();
+</script>
+</body>
+</html>
