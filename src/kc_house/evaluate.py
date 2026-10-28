@@ -19,6 +19,31 @@ def regression_metrics(y_true: pd.Series, y_pred: np.ndarray) -> dict[str, float
     }
 
 
+def ratio_interval(
+    y_true: pd.Series, y_pred: np.ndarray, coverage: float = 0.8
+) -> dict[str, float]:
+    """Multipliers that turn a prediction into a range holding ``coverage`` of prices.
+
+    Computed from true/predicted ratios, so the range widens with the price.
+    """
+    ratio = np.asarray(y_true, dtype=float) / np.asarray(y_pred, dtype=float)
+    tail = (1 - coverage) / 2
+    low, high = np.quantile(ratio, [tail, 1 - tail])
+    return {"coverage": coverage, "low_ratio": float(low), "high_ratio": float(high)}
+
+
+def interval_coverage(
+    y_true: pd.Series, y_pred: np.ndarray, interval: dict[str, float]
+) -> float:
+    """Share of houses whose true price falls inside the predicted range."""
+    truth = np.asarray(y_true, dtype=float)
+    predicted = np.asarray(y_pred, dtype=float)
+    inside = (truth >= predicted * interval["low_ratio"]) & (
+        truth <= predicted * interval["high_ratio"]
+    )
+    return float(inside.mean())
+
+
 def error_by_price_band(
     y_true: pd.Series, y_pred: np.ndarray, n_bands: int = 4
 ) -> list[dict[str, float]]:

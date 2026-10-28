@@ -178,6 +178,7 @@ def _errors(report: dict) -> str:
 def _estimator(report: dict) -> str:
     estimator = report["estimator"]
     lost = report["test_metrics"]["r2"] - estimator["test_metrics"]["r2"]
+    interval = estimator["interval"]
     inputs = ", ".join(f"`{name}`" for name in estimator["inputs"])
     return f"""## The six-question estimator (what the website uses)
 
@@ -188,7 +189,13 @@ data only (no basement and no renovation assumed).
 {_metrics_table(estimator["test_metrics"])}
 
 Accuracy given up by asking six questions instead of 19 columns: **{lost:.3f} R²**.
-Floor for this model: {estimator["min_acceptable_r2"]:.2f}. Met."""
+Floor for this model: {estimator["min_acceptable_r2"]:.2f}. Met.
+
+**Price range shown to visitors.** The estimate is multiplied by
+{interval["low_ratio"]:.2f} and {interval["high_ratio"]:.2f} to give a range meant to
+hold the true price {interval["coverage"]:.0%} of the time. It was calibrated on
+out-of-fold training predictions; on the untouched test set it held the true price
+for {interval["test_coverage"]:.1%} of houses."""
 
 
 def _limitations() -> str:

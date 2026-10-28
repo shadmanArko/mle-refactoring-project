@@ -16,10 +16,16 @@ from importlib.metadata import version
 from pathlib import Path
 from typing import cast
 
+import numpy as np
 import pandas as pd
 import skops.io as sio
 from sklearn.base import clone
-from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, cross_val_score
+from sklearn.model_selection import (
+    GridSearchCV,
+    RandomizedSearchCV,
+    cross_val_predict,
+    cross_val_score,
+)
 from sklearn.pipeline import Pipeline
 
 from kc_house.config import (
@@ -40,7 +46,12 @@ from kc_house.data import (
     make_training_split,
 )
 from kc_house.estimator import build_estimator
-from kc_house.evaluate import error_by_price_band, regression_metrics
+from kc_house.evaluate import (
+    error_by_price_band,
+    interval_coverage,
+    ratio_interval,
+    regression_metrics,
+)
 from kc_house.models import (
     PRODUCTION_SEARCH_SPACE,
     build_baselines,
@@ -216,8 +227,22 @@ def run_training(
     # 7. The six-question estimator that the website uses.
     logger.info("Training the six-question estimator")
     estimator = build_estimator(best).fit(X_train, y_train)
-    estimate_metrics = regression_metrics(y_test, estimator.predict(X_test))
+    estimate_predictions = estimator.predict(X_test)
+    estimate_metrics = regression_metrics(y_test, estimate_predictions)
     _require_floor("Estimator", estimate_metrics["r2"], MIN_ACCEPTABLE_R2_ESTIMATE)
+
+    # The price range shown to visitors is calibrated on out-of-fold predictions of
+    # the training data, then checked on the untouched test set.
+    logger.info("Calibrating the 80 percent price range")
+    out_of_fold = np.asarray(
+        cross_val_predict(
+            build_estimator(best, unknown="global"), X_train, y_train, cv=cv
+        )
+    )
+    interval = ratio_interval(y_train, out_of_fold)
+    interval["test_coverage"] = interval_coverage(
+        y_test, estimate_predictions, interval
+    )
 
     dates = pd.to_datetime(raw["date"], format="%m/%d/%Y")
     report = {
@@ -249,9 +274,8 @@ def run_training(
             "inputs": ESTIMATE_INPUTS,
             "min_acceptable_r2": MIN_ACCEPTABLE_R2_ESTIMATE,
             "test_metrics": estimate_metrics,
-            "error_by_price_band": error_by_price_band(
-                y_test, estimator.predict(X_test)
-            ),
+            "interval": interval,
+            "error_by_price_band": error_by_price_band(y_test, estimate_predictions),
         },
     }
 

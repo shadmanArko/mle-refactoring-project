@@ -57,6 +57,15 @@ def test_unknown_zipcode_is_rejected_with_its_value(defaults):
         defaults.transform(answers(zipcode=12345))
 
 
+def test_unknown_zipcode_can_fall_back_to_overall_medians_for_cross_validation(split):
+    X_train, _, _, _ = split
+    lenient = ZipcodeDefaults(unknown="global").fit(X_train)
+
+    completed = lenient.transform(answers(zipcode=12345))
+
+    assert completed["lat"].iloc[0] == pytest.approx(X_train["lat"].median())
+
+
 def test_missing_answers_name_the_missing_column(defaults):
     with pytest.raises(ValueError, match="grade"):
         defaults.transform(answers().drop(columns=["grade"]))

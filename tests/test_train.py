@@ -86,6 +86,9 @@ def test_metrics_record_provenance_and_baselines_scored_first(trained):
         "temporal (train past, test future)",
     }
     assert saved["estimator"]["inputs"] == ESTIMATE_INPUTS
+    interval = saved["estimator"]["interval"]
+    assert 0 < interval["low_ratio"] < 1 < interval["high_ratio"]
+    assert 0 <= interval["test_coverage"] <= 1
 
 
 @pytest.mark.parametrize("floor", ["MIN_ACCEPTABLE_R2", "MIN_ACCEPTABLE_R2_ESTIMATE"])

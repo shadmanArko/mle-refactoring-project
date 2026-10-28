@@ -37,13 +37,21 @@ class ZipcodeDefaults(BaseEstimator, TransformerMixin):
       renovation, since the visitor was not asked.
 
     Medians are kept as plain arrays so the fitted object saves cleanly with skops.
+
+    ``unknown`` decides what happens to a zip code not seen in ``fit``: ``"error"``
+    (serving: reject it) or ``"global"`` (cross-validation: use the overall median,
+    because a rare zip code may be missing from one training fold).
     """
+
+    def __init__(self, unknown: str = "error") -> None:
+        self.unknown = unknown
 
     def fit(self, X: pd.DataFrame, y: object = None) -> Self:
         require_columns(X, [*ESTIMATE_INPUTS, *ZIP_MEDIAN_COLUMNS])
         medians = X.groupby("zipcode")[ZIP_MEDIAN_COLUMNS].median()
         self.zipcodes_ = medians.index.to_numpy(dtype=np.int64)
         self.medians_ = medians.to_numpy(dtype=float)
+        self.global_medians_ = X[ZIP_MEDIAN_COLUMNS].median().to_numpy(dtype=float)
         self.median_columns_ = list(ZIP_MEDIAN_COLUMNS)
         return self
 
@@ -52,20 +60,23 @@ class ZipcodeDefaults(BaseEstimator, TransformerMixin):
         positions = np.searchsorted(self.zipcodes_, X["zipcode"].to_numpy())
         positions = np.clip(positions, 0, len(self.zipcodes_) - 1)
         unknown = X["zipcode"].to_numpy() != self.zipcodes_[positions]
+        medians = self.medians_[positions]
         if unknown.any():
-            bad = sorted({int(z) for z in X["zipcode"].to_numpy()[unknown]})
-            raise ValueError(f"Unknown zipcode(s): {bad}")
+            if self.unknown != "global":
+                bad = sorted({int(z) for z in X["zipcode"].to_numpy()[unknown]})
+                raise ValueError(f"Unknown zipcode(s): {bad}")
+            medians[unknown] = self.global_medians_
 
         completed = X[ESTIMATE_INPUTS].copy()
-        for column, values in zip(
-            self.median_columns_, self.medians_[positions].T, strict=True
-        ):
+        for column, values in zip(self.median_columns_, medians.T, strict=True):
             completed[column] = values
         completed["sqft_above"] = completed["sqft_living"]  # no basement assumed
         completed["yr_renovated"] = 0.0  # never renovated assumed
         return completed
 
 
-def build_estimator(full_model: Pipeline) -> Pipeline:
+def build_estimator(full_model: Pipeline, unknown: str = "error") -> Pipeline:
     """Wrap an unfitted full model so it can answer from six questions."""
-    return Pipeline([("defaults", ZipcodeDefaults()), ("model", clone(full_model))])
+    return Pipeline(
+        [("defaults", ZipcodeDefaults(unknown=unknown)), ("model", clone(full_model))]
+    )

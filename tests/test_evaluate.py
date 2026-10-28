@@ -2,7 +2,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from kc_house.evaluate import error_by_price_band, regression_metrics
+from kc_house.evaluate import (
+    error_by_price_band,
+    interval_coverage,
+    ratio_interval,
+    regression_metrics,
+)
 
 
 def test_perfect_predictions_have_zero_error():
@@ -34,3 +39,23 @@ def test_price_bands_cover_every_house_exactly_once():
     assert [band["band"] for band in bands] == [1, 2, 3, 4]
     assert sum(band["houses"] for band in bands) == 100
     assert all(band["mean_error"] == pytest.approx(1.0) for band in bands)
+
+
+def test_ratio_interval_holds_the_requested_share_of_prices():
+    rng = np.random.default_rng(0)
+    predicted = rng.uniform(200_000, 900_000, 5000)
+    truth = pd.Series(predicted * rng.normal(1.0, 0.1, 5000))
+
+    interval = ratio_interval(truth, predicted, coverage=0.8)
+
+    assert interval["low_ratio"] < 1.0 < interval["high_ratio"]
+    assert interval_coverage(truth, predicted, interval) == pytest.approx(0.8, abs=0.01)
+
+
+def test_interval_widens_in_dollars_as_the_price_grows():
+    interval = {"coverage": 0.8, "low_ratio": 0.9, "high_ratio": 1.1}
+
+    cheap = 200_000 * interval["high_ratio"] - 200_000 * interval["low_ratio"]
+    pricey = 900_000 * interval["high_ratio"] - 900_000 * interval["low_ratio"]
+
+    assert pricey > cheap
