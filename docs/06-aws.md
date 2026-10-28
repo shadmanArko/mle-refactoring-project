@@ -1,8 +1,8 @@
 # 06 · AWS Lambda deployment
 
-> **Status: written and validated, not deployed.** Nothing in this repository has been
-> sent to AWS. Everything below marked "verified" was checked locally; everything marked
-> "not verified" can only be proven by a real deploy.
+> **Status: deployed in `database=none` mode on 2026-10-28** to `eu-central-1`:
+> <https://2y25p06my9.execute-api.eu-central-1.amazonaws.com/>. The `rds` mode (private Postgres) is written and tested but **not deployed**, so
+> everything that depends on the database or the VPC is still marked "not verified".
 
 ## Problem
 
@@ -99,11 +99,43 @@ approval environment.
 | Template security properties (19 tests) | verified: no secret values, private encrypted database, no `0.0.0.0/0`, least-privilege IAM, throttling, retention, both modes, options |
 | The Lambda image target (arm64) | verified locally: builds in about 5 minutes, 860 MB, adapter present and executable, boto3 present; the app starts read-only with no Linux capabilities and passes the smoke test 9 of 9 in database-less mode |
 | Secrets loading (escaping, failure handling, start-up wiring) | verified with 7 unit tests and a fake Secrets Manager |
-| Lambda Web Adapter serving real API Gateway events | **not verified**: only a real invoke proves it |
-| Cold-start time, memory sizing, throttle values | **not verified**: measure after deploy; expect a few seconds on a cold start |
-| Cross-AZ access to the single-AZ Secrets Manager endpoint | **not verified** |
+| Lambda Web Adapter serving real API Gateway events | **verified live** (`none` mode): 9 of 9 smoke checks through the public URL |
+| Secrets read from Secrets Manager on AWS | **verified live**: an anonymous write returns 401 (not 403), which is only possible once the API key has been loaded from the secret |
+| Cold-start time | **measured: about 17 s** for the first request after idle (see "Cold starts" below). Warm requests take 1 to 4 ms in the function and about 80 ms from a laptop |
+| Memory sizing | measured 371 MB used of 2,048 MB. Not tuned: more memory would not speed up the single-threaded imports that dominate the cold start |
+| Throttle values | **not verified**: not load-tested |
+| Cross-AZ access to the single-AZ Secrets Manager endpoint, private RDS, the Postgres engine version | **not verified**: only exist in `rds` mode, which has not been deployed |
 | CloudFormation syntax and semantics (`cfn-lint`, both modes) | verified: no errors. One warning (W3691) says engine version `17` may be rejected by RDS; if so, deploy with `-c postgres_version=<supported minor>` |
 | GitHub deploy workflow and OIDC role | **not verified**: needs your account |
+
+## First deployment record (2026-10-28, `database=none`)
+
+| | |
+|---|---|
+| Region and mode | `eu-central-1`, `database=none`, alerts to the owner's email |
+| Resources created | 16 (Lambda, HTTP API and stage, secret, logs, alarms, topic, budget); no VPC, no database |
+| Time | 62 s for CloudFormation; 342 s in total including the local image build and upload |
+| Smoke test through the public URL | 9 of 9 |
+| Memory used | 371 MB of 2,048 MB |
+| Steps that were read-only first | identity check, bootstrap status, existing resources, `cdk diff`; changes were made only after each was approved |
+
+## Cold starts
+
+The first request after the function has been idle takes about 17 seconds. Lambda's log
+shows an Init Duration of 9.8 s plus 7.0 s inside the first invoke. The app's own log shows
+where it goes: about 13.9 s from container start until the server begins listening (Python
+importing FastAPI, pandas, scikit-learn, skops and boto3), then about 1 s for the secret and
+the model. The same imports take 3.7 to 4.3 s on a laptop, so most of the gap is the cold
+container image (files are fetched lazily on first use) and Lambda's CPU.
+
+Options, cheapest first:
+
+| Option | Effect | Cost |
+|---|---|---|
+| Do nothing | one visitor in a while waits about 17 s; the page shows "Estimating…" and works | $0 |
+| A scheduled ping every 5 minutes (not built yet) | keeps one instance warm most of the time | about $0 |
+| Provisioned concurrency 1: `-c provisioned_concurrency=1` | no cold start while enabled; reversible | about $0.60 a day |
+| Start serving the page before the model loads (code change, not built yet) | the page appears in a few seconds; estimates wait | engineering time |
 
 ## Known limits and next steps
 

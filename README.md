@@ -11,12 +11,13 @@ flowchart LR
     M --> A[FastAPI service<br/>estimate + CRUD]
     A --> W[One-page tester<br/>+ presentation]
     A --> D[Docker + Postgres]
-    D -.ready, not yet deployed.-> L[AWS Lambda]
+    D --> L[AWS Lambda<br/>deployed: estimate + pages]
 ```
 
-**Status:** everything runs locally and in Docker, and the AWS Lambda infrastructure is written and
-validated, but **it has not been deployed**, so there is no live link yet. See
-[docs/06-aws.md](docs/06-aws.md) for what is verified and what only a real deploy can prove.
+**Live:** <https://2y25p06my9.execute-api.eu-central-1.amazonaws.com/> (AWS Lambda, Frankfurt). This deployment has the estimator, the
+page and the slides but **no database**, so the house CRUD endpoints answer 503 there by design; the full
+CRUD runs locally and in Docker. The first request after a quiet period is a **cold start of about 17
+seconds**; after that responses take milliseconds. Details and numbers: [docs/06-aws.md](docs/06-aws.md).
 
 **CI:** all four GitHub Actions jobs (checks, notebook, infrastructure, Docker stack) passed on their
 first real run. (For the first commits GitHub refused to start any job over an account billing limit; every

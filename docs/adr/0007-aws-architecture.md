@@ -1,6 +1,6 @@
 # ADR-0007 · AWS architecture: Lambda container, HTTP API, private RDS
 
-Status: accepted (written; not yet deployed)
+Status: accepted. Deployed in `none` mode on 2026-10-28; `rds` mode written and tested but not yet deployed.
 
 ## Context
 
@@ -35,8 +35,9 @@ flowchart TD
 
 - (+) Idle cost is near zero in `none` mode, and about $22 a month with the database.
 - (+) Security claims are asserted by tests against the synthesised template.
-- (-) Several runtime behaviours (adapter, cold start, cross-AZ endpoint access) are
-  unproven until the first deploy; the runbook lists them.
+- (-) Cold start is long: about 17 s for the first request after idle (measured on the
+  first deploy). The adapter and the secret loading are proven live; cross-AZ endpoint
+  access and the database path are still unproven because `rds` mode is not deployed.
 - Revisit when: real data is stored (multi-AZ, backups, deletion protection), traffic is
   public (WAF, custom domain, alarms with an on-call), or cold starts hurt (provisioned
   concurrency, smaller image).

@@ -143,7 +143,7 @@ svg .bar { fill: var(--line); } svg .bar.top { fill: var(--brand); } svg .bar.re
     <rect class="acc" x="190" y="136" width="300" height="82" rx="8"/><text x="340" y="160" text-anchor="middle">FastAPI service</text><text class="m" x="340" y="180" text-anchor="middle">model in memory · estimates need no database</text><text class="m" x="340" y="198" text-anchor="middle">closed-by-default writes · JSON logs</text>
     <rect class="box" x="540" y="150" width="130" height="54" rx="8"/><text x="605" y="174" text-anchor="middle">Database</text><text class="m" x="605" y="192" text-anchor="middle">SQLite · Postgres</text>
     <path class="ln" d="M140 177H188"/><path class="ln" d="M490 177H538"/>
-    <rect class="plan" x="176" y="124" width="328" height="106" rx="12"/><text class="m" x="184" y="240">Docker image: built · AWS Lambda infrastructure: written, not deployed</text>
+    <rect class="plan" x="176" y="124" width="328" height="106" rx="12"/><text class="m" x="184" y="240">Docker image: built · AWS Lambda: live (estimates and pages, no database)</text>
   </svg>
 </section>
 
@@ -227,7 +227,7 @@ svg .bar { fill: var(--line); } svg .bar.top { fill: var(--brand); } svg .bar.re
     <div class="card"><h3>Reproducible <span class="tag done">done</span></h3><p>Locked dependencies; every model records its code version, data hash and settings.</p></div>
     <div class="card"><h3>Containers <span class="tag done">done</span></h3><p>The model is trained inside the image build. Non-root, read-only image; tested against a real Postgres, including a database outage.</p></div>
     <div class="card"><h3>Observable <span class="tag done">done</span></h3><p>JSON logs with a request id and stack traces; health shows model and database state.</p></div>
-    <div class="card"><h3>AWS Lambda <span class="tag next">ready, not deployed</span></h3><p>Infrastructure written and checked by 19 template tests: private encrypted database, no secrets in the template, throttling. A real deploy is the next step.</p></div>
+    <div class="card"><h3>AWS Lambda <span class="tag done">live</span></h3><p>Deployed in Frankfurt: page, slides and estimates, 9 of 9 live checks. The first request after idle takes about 17 s (cold start), then milliseconds. The database mode is not deployed.</p></div>
   </div>
 </section>
 
@@ -236,11 +236,11 @@ svg .bar { fill: var(--line); } svg .bar.top { fill: var(--brand); } svg .bar.re
   <h2>Steps, challenges, next time</h2>
   <div class="grid cols-3">
     <div class="card"><h3>Steps</h3><ul class="tight muted" style="font-size:.82em">
-      <li>Read the notebook, freeze its numbers</li><li>Refactor into a tested pipeline</li><li>Compare and tune models</li><li>Build the API and CRUD</li><li>Add the six-question page</li><li>Containerise, then write the AWS infrastructure</li></ul></div>
+      <li>Read the notebook, freeze its numbers</li><li>Refactor into a tested pipeline</li><li>Compare and tune models</li><li>Build the API and CRUD</li><li>Add the six-question page</li><li>Containerise, then deploy to AWS Lambda</li></ul></div>
     <div class="card"><h3>Challenges</h3><ul class="tight muted" style="font-size:.82em">
       <li>Leakage hidden inside a feature</li><li>Text and code disagreed about the target</li><li>The "obvious" model was not the best</li><li>Users cannot supply 19 inputs</li><li>Keeping a public demo safe</li><li>Proving what cannot be run yet</li></ul></div>
     <div class="card"><h3>With more time</h3><ul class="tight muted" style="font-size:.82em">
-      <li>Database migrations (Alembic)</li><li>Drift monitoring and scheduled retraining</li><li>Fairness audit of location features</li><li>Explanations per prediction (SHAP)</li><li>Deploy, measure, load-test</li></ul></div>
+      <li>Database migrations (Alembic)</li><li>Drift monitoring and scheduled retraining</li><li>Fairness audit of location features</li><li>Explanations per prediction (SHAP)</li><li>Cut the 17 s cold start, load-test</li></ul></div>
   </div>
 </section>
 

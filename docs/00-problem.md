@@ -65,5 +65,5 @@ live data refresh, user accounts.
 | Is the refactor faithful? | Yes: all 19 features equal the notebook's within 1e-9; the split is identical ([docs/01](01-pipeline.md)) |
 | Is it leak-free? | Yes: the water feature is fitted on training rows only, with a test that proves it |
 | Is the model honest? | Yes: baselines, six models, stricter splits, a model card with its weaknesses ([model card](model-card.md)) |
-| Can a non-technical person use it? | Locally and in Docker, yes ([docs/04](04-web.md)). A public link needs the AWS deploy, which has **not** been done yet ([docs/06](06-aws.md)) |
-| Is it safe to be public? | By design and by test: bounded inputs, closed-by-default writes, throttling, no secrets in the template. Not yet proven on a live deployment |
+| Can a non-technical person use it? | Yes: <https://2y25p06my9.execute-api.eu-central-1.amazonaws.com/> (estimate, page and slides; no database in that deployment). The first request after idle takes about 17 s ([docs/06](06-aws.md)) |
+| Is it safe to be public? | By design and by test, and checked live: anonymous writes refused (401), invalid input rejected (422), security headers present, secrets read from Secrets Manager. Not load-tested |
