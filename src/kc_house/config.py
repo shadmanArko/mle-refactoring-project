@@ -49,6 +49,20 @@ MODEL_FEATURES = [
 # The notebook reaches ~0.84; the grade-only baseline reaches ~0.43.
 MIN_ACCEPTABLE_R2 = 0.80
 
+# The six everyday questions a visitor answers; the estimator fills in the rest.
+ESTIMATE_INPUTS = [
+    "bedrooms",
+    "bathrooms",
+    "sqft_living",
+    "grade",
+    "zipcode",
+    "waterfront",
+]
+# Looser floor for the six-question estimator, which knows far less about a house.
+MIN_ACCEPTABLE_R2_ESTIMATE = 0.70
+
+SEARCH_ITERATIONS = 12
+
 DEFAULT_ARTIFACTS_DIR = Path("artifacts")
 
 # Hyperparameters chosen by the notebook's grid search.
