@@ -1,0 +1,73 @@
+{
+  "clean_columns": [
+    "id",
+    "date",
+    "price",
+    "bedrooms",
+    "bathrooms",
+    "sqft_living",
+    "sqft_lot",
+    "floors",
+    "waterfront",
+    "view",
+    "condition",
+    "grade",
+    "sqft_above",
+    "sqft_basement",
+    "zipcode",
+    "lat",
+    "long",
+    "sqft_living15",
+    "sqft_lot15",
+    "last_known_change",
+    "sqft_price",
+    "delta_lat",
+    "delta_long",
+    "center_distance",
+    "water_distance"
+  ],
+  "clean_shape": [
+    21596,
+    25
+  ],
+  "elastic_best_params": {
+    "model__regressor__alpha": 0.01,
+    "model__regressor__l1_ratio": 0.2
+  },
+  "elastic_cv_best_r2": 0.8266260084160979,
+  "elastic_test_r2": 0.8442693803832879,
+  "feature_columns": [
+    "id",
+    "bedrooms",
+    "bathrooms",
+    "sqft_living",
+    "sqft_lot",
+    "floors",
+    "waterfront",
+    "view",
+    "condition",
+    "grade",
+    "sqft_above",
+    "sqft_basement",
+    "zipcode",
+    "lat",
+    "long",
+    "sqft_living15",
+    "sqft_lot15",
+    "last_known_change",
+    "center_distance",
+    "water_distance"
+  ],
+  "grade_and_change_adj_r2": 0.4804339480421205,
+  "grade_only_adj_r2": 0.4320316480126819,
+  "polynomial_adj_r2": 0.7533419004972675,
+  "train_index_sha256": "4d5955541692a8090c553aa9162c84e79de92fedb1f9d7664bf3ef0a464715d9",
+  "x_test_shape": [
+    6479,
+    20
+  ],
+  "x_train_shape": [
+    15117,
+    20
+  ]
+}

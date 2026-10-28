@@ -15,9 +15,41 @@ dependencies = [
 dev = [
     "ipykernel>=7.3.0",
     "nbformat>=5.11.1",
+    "pyright>=1.1.414",
+    "pytest>=9.2.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.3",
 ]
+
+[build-system]
+requires = ["uv_build>=0.13.5,<0.14"]
+build-backend = "uv_build"
 
 [tool.uv]
 required-version = ">=0.13.5"
 # Apply certificate fixes without adding unused runtime packages.
 constraint-dependencies = ["certifi>=2026.10.19", "pip>=26.2.2"]
+
+[tool.uv.build-backend]
+module-name = "kc_house"
+
+[tool.ruff]
+line-length = 88
+src = ["src", "tests"]
+extend-exclude = ["King-County.ipynb", "bonus_solution"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "N", "PD", "NPY", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["PD901"]
+"scripts/**" = ["S102"]
+
+[tool.pyright]
+include = ["src", "tests", "scripts"]
+pythonVersion = "3.13"
+typeCheckingMode = "standard"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers --strict-config"
