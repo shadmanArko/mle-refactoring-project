@@ -7,7 +7,7 @@
 # Base images are pinned by digest so builds are reproducible; Dependabot proposes
 # updates. Build:  docker build --build-arg GIT_SHA=$(git rev-parse HEAD) -t kc-house .
 
-FROM ghcr.io/astral-sh/uv:0.13.6@sha256:af22a52f5eafef3d78e551599d405c02df61919d18028f0cea8eda93bc9986d0 AS uv
+FROM ghcr.io/astral-sh/uv:0.13.10@sha256:a3ea1357342c1a4bf9a0c53a3deb1b55379aefa037338d8113d5771efa01774f AS uv
 
 FROM python:3.13.17-slim-bookworm@sha256:e32be0e55814a08977501ca863271d9bd02443710db8f2afaf8372e2c4508530 AS builder
 COPY --from=uv /uv /uvx /bin/
